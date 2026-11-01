@@ -170,7 +170,8 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
     elif c == "HalfLife":
         s = rk(zc["halflife"], False)
     elif c == "MCR":
-        s = rk(zc["mcr"])
+        mw = sp.params.get("mcr_window", sp.window)
+        s = rk(_zcache(f, sp.signal, mw)["mcr"])
     elif c == "CCR":
         s = rk(_ccr(f, sp))
     elif c == "MCR+Coint":

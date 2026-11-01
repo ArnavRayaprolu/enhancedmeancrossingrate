@@ -54,10 +54,11 @@ def specs_scan3():
 
 def specs_scan4():
     groups = {}
-    for c, u, n in itertools.product(["MCR2", "MCRstatic", "MCR+HalfLife", "MCR+Coint",
-                                      "Distance", "Correlation"], [1, 3], [5, 10, 20]):
-        groups.setdefault((c,), []).append(
-            Spec(criterion=c, window=24, entry=2.5, n_pairs=n, max_uses=u, top_k=100,
+    for c, e, u, n in itertools.product(["MCR2", "MCRstatic", "MCR+HalfLife", "MCR+Coint",
+                                         "Distance", "Correlation"], [2.5, 3.0], [1, 3],
+                                        [5, 10]):
+        groups.setdefault((c, u), []).append(
+            Spec(criterion=c, window=24, entry=e, exit=-0.5, n_pairs=n, max_uses=u, top_k=100,
                  weighting="equal"))
     return [(f"scan4 {k}", v) for k, v in groups.items()]
 
