@@ -1,7 +1,7 @@
 name: download-data
 
-# Downloads the free market data used by the study (Yahoo Finance, Binance bulk
-# archive) on a GitHub-hosted runner and commits the parquet files to the branch
+# Downloads the free cryptocurrency data used by the study (Binance bulk
+# archive, Coinbase, Bitstamp, OKX, Bybit) on a GitHub-hosted runner and commits the parquet files to the branch
 # that triggered the run. Re-run manually from the Actions tab if needed.
 
 on:
@@ -21,11 +21,11 @@ concurrency:
 jobs:
   download:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 340
     strategy:
       fail-fast: false
       matrix:
-        dataset: [sp500_1h, sp500_1d, etf_1d, binance_1h]
+        dataset: [binance_spot_1h, binance_spot_15m, binance_perp_1h, coinbase_1h, bitstamp_1h, okx_1h, bybit_1h]
     steps:
       - uses: actions/checkout@v4
         with:

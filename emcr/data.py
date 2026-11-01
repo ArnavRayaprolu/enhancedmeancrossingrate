@@ -15,8 +15,10 @@ DATA = ROOT / "data"
 def load(ds: C.Dataset) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Return (close, dollar_volume, meta) for a dataset, resampled if required."""
     folder = DATA / ds.source
-    close = pd.read_parquet(folder / "close.parquet").astype(float)
-    dvol = pd.read_parquet(folder / "dvol.parquet").astype(float)
+    read = lambda stem: pd.concat([pd.read_parquet(f) for f in
+                                   sorted(folder.glob(f"{stem}*.parquet"))]).astype(float)
+    close, dvol = read("close"), read("dvol")
+    close = close[~close.index.duplicated()]; dvol = dvol[~dvol.index.duplicated()]
     meta = pd.read_csv(folder / "meta.csv", dtype=str).fillna("")
     close.index = pd.to_datetime(close.index, utc=True)
     dvol.index = close.index
@@ -30,6 +32,8 @@ def load(ds: C.Dataset) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     close = close.where(close > 0)
     meta = meta.set_index("ticker").reindex(close.columns)
     meta["group"] = meta["group"].replace("", "all").fillna("all")
+    if "date_added" not in meta:
+        meta["date_added"] = ""
     return close, dvol, meta
 
 

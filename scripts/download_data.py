@@ -1,25 +1,32 @@
-"""Download every dataset used in the revised study from free public sources.
+"""Download free cryptocurrency price data (bars of 1 hour or finer).
 
 Run locally (``python scripts/download_data.py all``) or let the GitHub Actions
 workflow ``.github/workflows/download-data.yml`` run it and commit the output.
 
-Output layout (wide parquet files, UTC timestamps, float32):
+Every source follows the same point-in-time-safe recipe:
+  1. list every USD / USDT-quoted symbol the venue publishes (incl. delisted
+     symbols where the venue's archive keeps them -- Binance does);
+  2. download DAILY bars for all of them and compute a 90-day rolling median
+     of dollar volume;
+  3. keep every symbol that was EVER among the TOP most liquid on any day
+     (a superset of any point-in-time top-K universe used in the backtest);
+  4. download intraday bars (1h, or 15m) for those symbols.
+The backtest itself chooses the universe in each formation window from
+formation-window volume only, so no future information enters selection.
 
-    data/<dataset>/close.parquet     close price (split/dividend adjusted for equities)
-    data/<dataset>/dvol.parquet      dollar (quote) volume per bar
-    data/<dataset>/meta.csv          ticker metadata (sector / group, date added ...)
+Output (wide parquet, UTC timestamps, float32, split by calendar year):
+    data/<dataset>/close_<year>.parquet   last trade price of the bar
+    data/<dataset>/dvol_<year>.parquet    quote (USD / USDT) volume of the bar
+    data/<dataset>/meta.csv
 
 Datasets
---------
-sp500_1h   S&P 500 constituents, hourly, last 730 days            (Yahoo Finance)
-sp500_1d   S&P 500 constituents, daily, 2005-01 onwards           (Yahoo Finance)
-etf_1d     liquid sector / country / asset-class ETFs, daily      (Yahoo Finance)
-binance_1h Binance spot USDT pairs, hourly, 2020-01 onwards,
-           INCLUDING pairs that were later delisted                (data.binance.vision)
-
-The crypto universe is chosen point-in-time inside the backtest (top coins by
-trailing dollar volume in each formation window), so the download keeps every
-symbol that was ever among the most liquid ``--crypto-top`` coins.
+    binance_spot_1h    Binance spot  USDT pairs, 1h, 2017-08 ->     data.binance.vision
+    binance_spot_15m   Binance spot  USDT pairs, 15m, 2021-01 ->    data.binance.vision
+    binance_perp_1h    Binance USDT-M perpetuals, 1h, 2020-01 ->    data.binance.vision
+    coinbase_1h        Coinbase USD pairs, 1h, 2017-01 ->           api.exchange.coinbase.com
+    bitstamp_1h        Bitstamp USD pairs, 1h, 2017-01 ->           www.bitstamp.net
+    okx_1h             OKX USDT pairs, 1h, 2019-01 ->               www.okx.com
+    bybit_1h           Bybit spot USDT pairs, 1h, 2021-07 ->        api.bybit.com
 """
 from __future__ import annotations
 
@@ -28,8 +35,10 @@ import concurrent.futures as cf
 import io
 import re
 import sys
+import threading
 import time
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -39,178 +48,126 @@ import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-UA = {"User-Agent": "Mozilla/5.0 (research download; EMCR pairs study)"}
+UA = {"User-Agent": "Mozilla/5.0 (academic research; pairs-trading study)"}
+TOP = 50                       # keep symbols ever in the top-50 by 90d median volume
+NOW = pd.Timestamp.now(tz="UTC").floor("D")
+
+STABLE = {"USDC", "BUSD", "TUSD", "FDUSD", "USDP", "DAI", "PAX", "UST", "USTC", "SUSD",
+          "EUR", "GBP", "AUD", "TRY", "BRL", "RUB", "AEUR", "EURI", "BIDR", "IDRT", "BKRW",
+          "USDS", "USDSB", "XUSD", "USD1", "BFUSD", "RLUSD", "PYUSD", "USDE", "USDD", "GUSD",
+          "USDT", "CAD", "JPY", "CHF", "SGD", "PAXG", "XAUT", "WBTC", "WBETH", "BETH", "STETH",
+          "CBETH", "EURC", "LUSD", "FRAX", "FDUSD", "USDG", "USTC"}
+LEVERAGED = re.compile(r"(UP|DOWN|BULL|BEAR|[235]L|[235]S)$")
+
+
+def _ok_base(base: str) -> bool:
+    return base.upper() not in STABLE and not LEVERAGED.search(base.upper())
+
 
 # --------------------------------------------------------------------------- #
-# helpers
+# HTTP with a per-host rate limit
 # --------------------------------------------------------------------------- #
-
-def _save(name: str, close: pd.DataFrame, dvol: pd.DataFrame, meta: pd.DataFrame) -> None:
-    out = DATA / name
-    out.mkdir(parents=True, exist_ok=True)
-    close = close.sort_index().astype("float32")
-    dvol = dvol.reindex_like(close).astype("float32")
-    close.index = pd.to_datetime(close.index, utc=True)
-    dvol.index = close.index
-    close.to_parquet(out / "close.parquet", compression="zstd")
-    dvol.to_parquet(out / "dvol.parquet", compression="zstd")
-    meta.to_csv(out / "meta.csv", index=False)
-    print(f"[{name}] saved {close.shape[0]} bars x {close.shape[1]} series "
-          f"{close.index.min()} -> {close.index.max()}", flush=True)
+_session = requests.Session(); _session.headers.update(UA)
+_locks: dict[str, tuple[threading.Lock, list]] = {}
 
 
-def _get(url: str, tries: int = 5, **kw) -> requests.Response | None:
+def _get(url: str, params=None, tries: int = 6, min_interval: float = 0.0):
+    host = url.split("/")[2]
+    lock, last = _locks.setdefault(host, (threading.Lock(), [0.0]))
     for i in range(tries):
+        if min_interval:
+            with lock:
+                wait = last[0] + min_interval - time.time()
+                if wait > 0:
+                    time.sleep(wait)
+                last[0] = time.time()
         try:
-            r = requests.get(url, headers=UA, timeout=60, **kw)
+            r = _session.get(url, params=params, timeout=60)
             if r.status_code == 404:
                 return None
             if r.status_code == 200:
                 return r
+            if r.status_code in (403, 451):
+                raise PermissionError(f"{host} refused ({r.status_code})")
         except requests.RequestException:
             pass
-        time.sleep(2 ** i)
+        time.sleep(min(60, 2 ** i))
     return None
 
 
-# --------------------------------------------------------------------------- #
-# Yahoo Finance (equities and ETFs)
-# --------------------------------------------------------------------------- #
-
-ETFS = {
-    # US sector SPDRs
-    "XLB": "US sector", "XLE": "US sector", "XLF": "US sector", "XLI": "US sector",
-    "XLK": "US sector", "XLP": "US sector", "XLU": "US sector", "XLV": "US sector",
-    "XLY": "US sector",
-    # US style / size / broad
-    "SPY": "US broad", "QQQ": "US broad", "DIA": "US broad", "IWM": "US broad",
-    "MDY": "US broad", "IVV": "US broad", "VTI": "US broad", "IWD": "US broad",
-    "IWF": "US broad", "IWN": "US broad", "IWO": "US broad", "RSP": "US broad",
-    # US industries
-    "SMH": "US industry", "IBB": "US industry", "KBE": "US industry", "KRE": "US industry",
-    "XHB": "US industry", "XRT": "US industry", "XME": "US industry", "XOP": "US industry",
-    "OIH": "US industry", "ITB": "US industry", "IYR": "US industry", "VNQ": "US industry",
-    "IYT": "US industry", "ITA": "US industry", "IHI": "US industry",
-    # single-country / regional equity
-    "EWA": "Intl equity", "EWC": "Intl equity", "EWD": "Intl equity", "EWG": "Intl equity",
-    "EWH": "Intl equity", "EWI": "Intl equity", "EWJ": "Intl equity", "EWK": "Intl equity",
-    "EWL": "Intl equity", "EWN": "Intl equity", "EWO": "Intl equity", "EWP": "Intl equity",
-    "EWQ": "Intl equity", "EWS": "Intl equity", "EWT": "Intl equity", "EWU": "Intl equity",
-    "EWW": "Intl equity", "EWY": "Intl equity", "EWZ": "Intl equity", "EZA": "Intl equity",
-    "EFA": "Intl equity", "EEM": "Intl equity", "VGK": "Intl equity", "FXI": "Intl equity",
-    "ILF": "Intl equity",
-    # fixed income
-    "TLT": "Fixed income", "IEF": "Fixed income", "SHY": "Fixed income", "LQD": "Fixed income",
-    "HYG": "Fixed income", "TIP": "Fixed income", "AGG": "Fixed income", "EMB": "Fixed income",
-    "MBB": "Fixed income",
-    # commodities / currency
-    "GLD": "Commodity", "SLV": "Commodity", "USO": "Commodity", "DBC": "Commodity",
-    "DBA": "Commodity", "GDX": "Commodity", "UUP": "Commodity", "FXE": "Commodity",
-    "FXY": "Commodity",
-}
+def _parallel(fn, items, workers=16, label=""):
+    out = {}
+    with cf.ThreadPoolExecutor(workers) as ex:
+        futs = {ex.submit(fn, it): it for it in items}
+        for n, f in enumerate(cf.as_completed(futs), 1):
+            it = futs[f]
+            try:
+                out[it] = f.result()
+            except PermissionError:
+                raise
+            except Exception as exc:
+                print(f"  {label} {it}: {exc}", flush=True); out[it] = None
+            if n % 50 == 0 or n == len(items):
+                print(f"  {label} {n}/{len(items)}", flush=True)
+    return out
 
 
-def _yf_batch(tickers, **kw):
-    import yfinance as yf
-    for attempt in range(5):
-        try:
-            df = yf.download(tickers, auto_adjust=True, progress=False, threads=True,
-                             group_by="column", **kw)
-            if df is not None and len(df):
-                return df
-        except Exception as exc:  # rate limits etc.
-            print(f"  yfinance error ({exc}); retry {attempt + 1}", flush=True)
-        time.sleep(10 * (attempt + 1))
-    return None
+def _save(name: str, frames: dict[str, pd.DataFrame], source: str) -> None:
+    frames = {s: d for s, d in frames.items() if d is not None and len(d)}
+    if not frames:
+        raise RuntimeError(f"{name}: no data")
+    close = pd.DataFrame({s: d["close"] for s, d in frames.items()}).sort_index()
+    dvol = pd.DataFrame({s: d["qvol"] for s, d in frames.items()}).reindex(close.index)
+    close.index = pd.to_datetime(close.index, utc=True); dvol.index = close.index
+    out = DATA / name
+    out.mkdir(parents=True, exist_ok=True)
+    for f in out.glob("*.parquet"):
+        f.unlink()
+    for yr, c in close.groupby(close.index.year):
+        c.astype("float32").to_parquet(out / f"close_{yr}.parquet", compression="zstd")
+        dvol.loc[c.index].astype("float32").to_parquet(out / f"dvol_{yr}.parquet",
+                                                        compression="zstd")
+    pd.DataFrame({"ticker": close.columns, "group": "crypto", "source": source}).to_csv(
+        out / "meta.csv", index=False)
+    print(f"[{name}] saved {close.shape[0]} bars x {close.shape[1]} symbols "
+          f"{close.index.min()} -> {close.index.max()}", flush=True)
 
 
-def _yahoo(tickers, batch=40, **kw):
-    closes, vols = [], []
-    for i in range(0, len(tickers), batch):
-        chunk = tickers[i:i + batch]
-        df = _yf_batch(chunk, **kw)
-        if df is None:
-            print(f"  batch {i // batch} failed: {chunk[:3]}...", flush=True)
-            continue
-        c = df["Close"]; v = df["Volume"]
-        if isinstance(c, pd.Series):
-            c = c.to_frame(chunk[0]); v = v.to_frame(chunk[0])
-        closes.append(c); vols.append(v)
-        print(f"  yahoo {min(i + batch, len(tickers))}/{len(tickers)}", flush=True)
-        time.sleep(2)
-    close = pd.concat(closes, axis=1)
-    vol = pd.concat(vols, axis=1)
-    close = close.loc[:, ~close.columns.duplicated()].dropna(how="all", axis=1)
-    vol = vol.loc[:, ~vol.columns.duplicated()].reindex(columns=close.columns)
-    return close, close * vol
+def _first(daily: dict, sym: str, st: pd.Timestamp) -> pd.Timestamp:
+    d = daily.get(sym)
+    return max(st, d.index.min().floor("D")) if d is not None and len(d) else st
 
 
-def sp500_meta() -> pd.DataFrame:
-    m = pd.read_csv(DATA / "sp500_constituents.csv")
-    m = m.rename(columns={"Symbol": "ticker", "Security": "name", "GICS Sector": "group",
-                          "Date added": "date_added"})
-    m["ticker"] = m["ticker"].str.replace(".", "-", regex=False).str.strip()
-    return m[["ticker", "name", "group", "date_added"]].drop_duplicates("ticker")
-
-
-def download_sp500_1h():
-    meta = sp500_meta()
-    close, dvol = _yahoo(meta["ticker"].tolist(), period="730d", interval="1h")
-    _save("sp500_1h", close, dvol, meta[meta["ticker"].isin(close.columns)])
-
-
-def download_sp500_1d():
-    meta = sp500_meta()
-    close, dvol = _yahoo(meta["ticker"].tolist(), start="2005-01-01", interval="1d")
-    _save("sp500_1d", close, dvol, meta[meta["ticker"].isin(close.columns)])
-
-
-def download_etf_1d():
-    meta = pd.DataFrame({"ticker": list(ETFS), "group": list(ETFS.values())})
-    meta["name"] = meta["ticker"]; meta["date_added"] = ""
-    close, dvol = _yahoo(meta["ticker"].tolist(), start="2005-01-01", interval="1d")
-    _save("etf_1d", close, dvol, meta[meta["ticker"].isin(close.columns)])
+def _ever_top(daily_qvol: dict[str, pd.Series], top: int = TOP) -> list[str]:
+    dv = pd.DataFrame({s: v for s, v in daily_qvol.items() if v is not None and len(v)})
+    dv = dv.sort_index()
+    med = dv.rolling(90, min_periods=20).median()
+    rank = med.rank(axis=1, ascending=False)
+    return sorted(rank.columns[(rank <= top).any()])
 
 
 # --------------------------------------------------------------------------- #
-# Binance spot (data.binance.vision bulk archive -- includes delisted symbols)
+# Binance bulk archive (spot and USDT-M futures), includes delisted symbols
 # --------------------------------------------------------------------------- #
-
 S3 = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
 BV = "https://data.binance.vision"
-STABLE = {"USDC", "BUSD", "TUSD", "FDUSD", "USDP", "DAI", "PAX", "UST", "USTC", "SUSD",
-          "EUR", "GBP", "AUD", "TRY", "BRL", "RUB", "AEUR", "EURI", "BIDR", "IDRT", "BKRW",
-          "USDS", "USDSB", "XUSD", "USD1", "BFUSD", "RLUSD", "PAXG", "WBTC", "WBETH", "BETH"}
-LEVERAGED = re.compile(r"(UP|DOWN|BULL|BEAR)USDT$")
+NS = "{http://s3.amazonaws.com/doc/2006-03-01/}"
 
 
-def _s3_list(prefix: str, delimiter: str = "/"):
-    """List keys / common prefixes under an S3 prefix (handles pagination)."""
+def _s3_list(prefix: str):
     keys, prefixes, marker = [], [], ""
-    ns = "{http://s3.amazonaws.com/doc/2006-03-01/}"
     while True:
-        r = _get(f"{S3}?delimiter={delimiter}&prefix={prefix}&marker={marker}")
+        r = _get(f"{S3}?delimiter=/&prefix={prefix}&marker={marker}")
         if r is None:
             raise RuntimeError(f"cannot list {prefix}")
         root = ElementTree.fromstring(r.content)
-        keys += [e.find(f"{ns}Key").text for e in root.findall(f"{ns}Contents")]
-        prefixes += [e.find(f"{ns}Prefix").text for e in root.findall(f"{ns}CommonPrefixes")]
-        if root.find(f"{ns}IsTruncated").text != "true":
+        k = [e.find(f"{NS}Key").text for e in root.findall(f"{NS}Contents")]
+        p = [e.find(f"{NS}Prefix").text for e in root.findall(f"{NS}CommonPrefixes")]
+        keys += k; prefixes += p
+        if root.find(f"{NS}IsTruncated").text != "true":
             return keys, prefixes
-        marker = (keys or prefixes)[-1]
-
-
-def _usdt_symbols():
-    _, pref = _s3_list("data/spot/monthly/klines/")
-    syms = [p.rstrip("/").split("/")[-1] for p in pref]
-    out = []
-    for s in syms:
-        if not s.endswith("USDT") or LEVERAGED.search(s):
-            continue
-        if s[:-4] in STABLE:
-            continue
-        out.append(s)
-    return sorted(out)
+        nm = root.find(f"{NS}NextMarker")
+        marker = nm.text if nm is not None else (k or p)[-1]
 
 
 def _read_kline_zip(content: bytes) -> pd.DataFrame:
@@ -219,63 +176,177 @@ def _read_kline_zip(content: bytes) -> pd.DataFrame:
     df = pd.read_csv(io.BytesIO(raw), header=None, usecols=[0, 4, 7])
     if not pd.api.types.is_numeric_dtype(df[0]):        # header row in some files
         df = df.apply(pd.to_numeric, errors="coerce").dropna()
-    t = df[0].astype("int64")
-    unit = np.where(t > 10 ** 14, "us", "ms")             # 2025+ spot files are in microseconds
-    ts = pd.to_datetime(np.where(unit == "us", t // 1000, t), unit="ms", utc=True)
-    return pd.DataFrame({"close": df[4].astype(float).values,
-                         "qvol": df[7].astype(float).values}, index=ts)
+    t = df[0].astype("int64").to_numpy()
+    t = np.where(t > 10 ** 14, t // 1000, t)              # 2025+ spot files use microseconds
+    return pd.DataFrame({"close": df[4].astype(float).to_numpy(),
+                         "qvol": df[7].astype(float).to_numpy()},
+                        index=pd.to_datetime(t, unit="ms", utc=True))
 
 
-def _symbol_klines(sym: str, interval: str, start: str) -> pd.DataFrame | None:
-    keys, _ = _s3_list(f"data/spot/monthly/klines/{sym}/{interval}/")
-    keys = [k for k in keys if k.endswith(".zip")
-            and k.split("-")[-2] + "-" + k.split("-")[-1][:2] >= start]
-    parts = []
-    for k in keys:
-        r = _get(f"{BV}/{k}")
-        if r is not None:
-            parts.append(_read_kline_zip(r.content))
+def _binance_klines(market: str, sym: str, interval: str, start: str):
+    keys, _ = _s3_list(f"data/{market}/monthly/klines/{sym}/{interval}/")
+    keys = [k for k in keys if k.endswith(".zip") and k[-11:-4] >= start]
+    parts = [_read_kline_zip(r.content) for k in keys if (r := _get(f"{BV}/{k}")) is not None]
     if not parts:
         return None
     df = pd.concat(parts).sort_index()
     return df[~df.index.duplicated()]
 
 
-def _parallel(fn, items, workers=16):
-    out = {}
-    with cf.ThreadPoolExecutor(workers) as ex:
-        futs = {ex.submit(fn, it): it for it in items}
-        for n, f in enumerate(cf.as_completed(futs), 1):
-            it = futs[f]
-            try:
-                out[it] = f.result()
-            except Exception as exc:
-                print(f"  {it}: {exc}", flush=True); out[it] = None
-            if n % 50 == 0:
-                print(f"  {n}/{len(items)}", flush=True)
-    return out
+def binance(market: str, interval: str, start: str, name: str, top: int = TOP):
+    _, pref = _s3_list(f"data/{market}/monthly/klines/")
+    syms = [p.rstrip("/").split("/")[-1] for p in pref]
+    syms = sorted(s for s in syms if s.endswith("USDT") and _ok_base(s[:-4]))
+    print(f"[{name}] {len(syms)} USDT symbols listed (incl. delisted)", flush=True)
+    daily = _parallel(lambda s: _binance_klines(market, s, "1d", start), syms, 32, name)
+    keep = _ever_top({s: d["qvol"] for s, d in daily.items() if d is not None}, top)
+    print(f"[{name}] {len(keep)} symbols were ever top-{top}", flush=True)
+    bars = _parallel(lambda s: _binance_klines(market, s, interval, start), keep, 16, name)
+    _save(name, bars, f"binance-{market}")
 
 
-def download_binance_1h(start="2020-01", top=60):
-    syms = _usdt_symbols()
-    print(f"[binance] {len(syms)} USDT spot symbols (incl. delisted)", flush=True)
-    daily = _parallel(lambda s: _symbol_klines(s, "1d", start), syms)
-    dv = pd.DataFrame({s: d["qvol"] for s, d in daily.items() if d is not None}).sort_index()
-    # every symbol that was ever among the `top` most liquid by 90-day median volume
-    med = dv.rolling(90, min_periods=30).median()
-    rank = med.rank(axis=1, ascending=False)
-    keep = sorted(rank.columns[(rank <= top).any()])
-    print(f"[binance] {len(keep)} symbols were ever top-{top}; downloading hourly", flush=True)
-    hourly = _parallel(lambda s: _symbol_klines(s, "1h", start), keep)
-    close = pd.DataFrame({s: d["close"] for s, d in hourly.items() if d is not None})
-    qvol = pd.DataFrame({s: d["qvol"] for s, d in hourly.items() if d is not None})
-    meta = pd.DataFrame({"ticker": close.columns, "group": "crypto", "name": close.columns,
-                         "date_added": ""})
-    _save("binance_1h", close, qvol, meta)
+# --------------------------------------------------------------------------- #
+# REST sources
+# --------------------------------------------------------------------------- #
+def _page_back(fetch, start: pd.Timestamp, step: pd.Timedelta, per_call: int):
+    """Generic backward/forward pager: fetch(t0, t1) -> DataFrame for [t0, t1)."""
+    parts, t0 = [], start
+    while t0 < NOW:
+        t1 = min(t0 + step * per_call, NOW)
+        df = fetch(t0, t1)
+        if df is not None and len(df):
+            parts.append(df)
+        t0 = t1
+    if not parts:
+        return None
+    df = pd.concat(parts).sort_index()
+    return df[~df.index.duplicated()]
 
 
-TASKS = {"sp500_1h": download_sp500_1h, "sp500_1d": download_sp500_1d,
-         "etf_1d": download_etf_1d, "binance_1h": download_binance_1h}
+def coinbase(start="2017-01-01", name="coinbase_1h", top=TOP):
+    base = "https://api.exchange.coinbase.com"
+    prods = _get(f"{base}/products").json()
+    ids = sorted(p["id"] for p in prods if p["quote_currency"] == "USD"
+                 and _ok_base(p["base_currency"]))
+    print(f"[{name}] {len(ids)} USD products", flush=True)
+
+    def candles(pid, gran, t0, t1):
+        r = _get(f"{base}/products/{pid}/candles",
+                 params=dict(granularity=gran, start=t0.isoformat(), end=t1.isoformat()),
+                 min_interval=0.12)
+        if r is None or not r.json():
+            return None
+        a = np.array(r.json(), dtype=float)            # time, low, high, open, close, volume
+        return pd.DataFrame({"close": a[:, 4], "qvol": a[:, 4] * a[:, 5]},
+                            index=pd.to_datetime(a[:, 0], unit="s", utc=True))
+
+    st = pd.Timestamp(start, tz="UTC")
+    daily = _parallel(lambda p: _page_back(lambda a, b: candles(p, 86400, a, b), st,
+                                           pd.Timedelta("1D"), 300), ids, 4, name)
+    keep = _ever_top({s: d["qvol"] for s, d in daily.items() if d is not None}, top)
+    print(f"[{name}] {len(keep)} products were ever top-{top}", flush=True)
+    bars = _parallel(lambda p: _page_back(lambda a, b: candles(p, 3600, a, b),
+                                          _first(daily, p, st),
+                                          pd.Timedelta("1h"), 300), keep, 4, name)
+    _save(name, {k.replace("-", ""): v for k, v in bars.items()}, "coinbase")
+
+
+def bitstamp(start="2017-01-01", name="bitstamp_1h", top=TOP):
+    base = "https://www.bitstamp.net/api/v2"
+    pairs = _get(f"{base}/trading-pairs-info/").json()
+    ids = sorted(p["url_symbol"] for p in pairs if p["name"].endswith("/USD")
+                 and _ok_base(p["name"].split("/")[0]))
+    print(f"[{name}] {len(ids)} USD pairs", flush=True)
+
+    def ohlc(pid, step, t0, t1):
+        r = _get(f"{base}/ohlc/{pid}/", params=dict(step=step, limit=1000,
+                                                     start=int(t0.timestamp()),
+                                                     end=int(t1.timestamp())),
+                 min_interval=0.15)
+        if r is None:
+            return None
+        d = r.json().get("data", {}).get("ohlc", [])
+        if not d:
+            return None
+        df = pd.DataFrame(d).astype(float)
+        return pd.DataFrame({"close": df["close"].to_numpy(),
+                             "qvol": (df["close"] * df["volume"]).to_numpy()},
+                            index=pd.to_datetime(df["timestamp"], unit="s", utc=True))
+
+    st = pd.Timestamp(start, tz="UTC")
+    daily = _parallel(lambda p: _page_back(lambda a, b: ohlc(p, 86400, a, b), st,
+                                           pd.Timedelta("1D"), 1000), ids, 4, name)
+    keep = _ever_top({s: d["qvol"] for s, d in daily.items() if d is not None}, top)
+    bars = _parallel(lambda p: _page_back(lambda a, b: ohlc(p, 3600, a, b),
+                                          _first(daily, p, st),
+                                          pd.Timedelta("1h"), 1000), keep, 4, name)
+    _save(name, {k.upper(): v for k, v in bars.items()}, "bitstamp")
+
+
+def okx(start="2019-01-01", name="okx_1h", top=TOP):
+    base = "https://www.okx.com/api/v5"
+    inst = _get(f"{base}/public/instruments", params=dict(instType="SPOT")).json()["data"]
+    ids = sorted(i["instId"] for i in inst if i["quoteCcy"] == "USDT" and _ok_base(i["baseCcy"]))
+    print(f"[{name}] {len(ids)} USDT pairs (listed now)", flush=True)
+
+    def hist(iid, bar, t0, t1):
+        r = _get(f"{base}/market/history-candles",
+                 params=dict(instId=iid, bar=bar, after=int(t1.timestamp() * 1000),
+                             before=int(t0.timestamp() * 1000) - 1, limit=100),
+                 min_interval=0.11)
+        if r is None or not r.json().get("data"):
+            return None
+        a = np.array(r.json()["data"], dtype=float)    # ts, o, h, l, c, vol, volCcy, volQuote
+        return pd.DataFrame({"close": a[:, 4], "qvol": a[:, 7]},
+                            index=pd.to_datetime(a[:, 0], unit="ms", utc=True))
+
+    st = pd.Timestamp(start, tz="UTC")
+    daily = _parallel(lambda p: _page_back(lambda a, b: hist(p, "1Dutc", a, b), st,
+                                           pd.Timedelta("1D"), 100), ids, 4, name)
+    keep = _ever_top({s: d["qvol"] for s, d in daily.items() if d is not None}, top)
+    bars = _parallel(lambda p: _page_back(lambda a, b: hist(p, "1H", a, b),
+                                          _first(daily, p, st),
+                                          pd.Timedelta("1h"), 100), keep, 4, name)
+    _save(name, {k.replace("-", ""): v for k, v in bars.items()}, "okx")
+
+
+def bybit(start="2021-07-01", name="bybit_1h", top=TOP):
+    base = "https://api.bybit.com/v5/market"
+    lst = _get(f"{base}/instruments-info", params=dict(category="spot")).json()
+    ids = sorted(i["symbol"] for i in lst["result"]["list"] if i["quoteCoin"] == "USDT"
+                 and _ok_base(i["baseCoin"]))
+    print(f"[{name}] {len(ids)} USDT pairs (listed now)", flush=True)
+
+    def kl(sym, iv, t0, t1):
+        r = _get(f"{base}/kline", params=dict(category="spot", symbol=sym, interval=iv,
+                                               start=int(t0.timestamp() * 1000),
+                                               end=int(t1.timestamp() * 1000) - 1, limit=1000),
+                 min_interval=0.06)
+        if r is None or not r.json().get("result", {}).get("list"):
+            return None
+        a = np.array(r.json()["result"]["list"], dtype=float)  # start,o,h,l,c,vol,turnover
+        return pd.DataFrame({"close": a[:, 4], "qvol": a[:, 6]},
+                            index=pd.to_datetime(a[:, 0], unit="ms", utc=True))
+
+    st = pd.Timestamp(start, tz="UTC")
+    daily = _parallel(lambda p: _page_back(lambda a, b: kl(p, "D", a, b), st,
+                                           pd.Timedelta("1D"), 1000), ids, 4, name)
+    keep = _ever_top({s: d["qvol"] for s, d in daily.items() if d is not None}, top)
+    bars = _parallel(lambda p: _page_back(lambda a, b: kl(p, "60", a, b),
+                                          _first(daily, p, st),
+                                          pd.Timedelta("1h"), 1000), keep, 4, name)
+    _save(name, bars, "bybit")
+
+
+TASKS = {
+    "binance_spot_1h": lambda: binance("spot", "1h", "2017-08", "binance_spot_1h"),
+    "binance_spot_15m": lambda: binance("spot", "15m", "2021-01", "binance_spot_15m", top=40),
+    "binance_perp_1h": lambda: binance("futures/um", "1h", "2020-01", "binance_perp_1h"),
+    "coinbase_1h": coinbase,
+    "bitstamp_1h": bitstamp,
+    "okx_1h": okx,
+    "bybit_1h": bybit,
+}
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__,
@@ -289,6 +360,7 @@ if __name__ == "__main__":
         try:
             TASKS[name]()
         except Exception as exc:
-            print(f"[{name}] FAILED: {exc}", flush=True); failed.append(name)
+            print(f"[{name}] FAILED: {type(exc).__name__}: {exc}", flush=True)
+            failed.append(name)
         print(f"[{name}] {time.time() - t0:.0f}s", flush=True)
     sys.exit(1 if len(failed) == len(todo) else 0)
