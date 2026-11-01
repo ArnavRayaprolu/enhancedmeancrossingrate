@@ -1,18 +1,20 @@
-"""Study protocol, version 4 (the revision's design).
+"""Study protocol, version 4.2 (the revision's design).
 
 Back to the original EMCR design of the submission; one trading strategy is held
 fixed across every universe and bar interval, so that differences in results
 measure the quality of PAIR SELECTION only.
 
-Fixed strategy
+Fixed strategy (v4.2: the classic ratio z-score replaces the submission's
+moving-average-difference signal, which earned less in 8 of 10 markets; the
+original signal is kept as a robustness check)
 --------------
     ratio      r_t = P^A_t / P^B_t
-    signal     z_t = (MA_35(r)_t - MA_140(r)_t) / SD_140(r)_t      (bars)
+    signal     z_t = (r_t - MA_140(r)_t) / SD_140(r)_t                 (bars)
     EMCR       share of consecutive formation-window bars at which z changes sign,
-               i.e. the empirical rate at which the moving-average spread of the
-               ratio crosses its equilibrium (zero); higher ranks first
-    entry/exit |z| >= 1.00 opens a position (long the ratio if z <= -1);
-               closed once z has reverted to within 0.25 of zero (or crossed it)
+               i.e. the empirical rate at which the PRICE RATIO CROSSES ITS OWN
+               (trailing) MEAN; higher ranks first
+    entry/exit |z| >= 2.0 opens a position (long the ratio if z <= -2);
+               closed once z has reverted to within 0.5 of zero (or crossed it)
     selection  top N = 20 pairs, no security used twice
     capital    rank-weighted: pair i receives Phi_i / sum_j Phi_j of capital,
                Phi = formation-window selection score, fixed for the window;
@@ -32,13 +34,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import product
 
-PROTOCOL_VERSION = "4.0"
+PROTOCOL_VERSION = "4.2"
 
 # --------------------------------------------------------------------------- #
 # signals (MAD = original; LEVEL and HEDGED are robustness checks for the editor)
 # --------------------------------------------------------------------------- #
-SIGNALS = ("MAD", "LEVEL", "HEDGED")
-PRIMARY_SIGNAL = "MAD"
+SIGNALS = ("LEVEL", "MAD", "HEDGED")
+PRIMARY_SIGNAL = "LEVEL"
 
 # --------------------------------------------------------------------------- #
 # selection methods
@@ -46,7 +48,8 @@ PRIMARY_SIGNAL = "MAD"
 CLASSICS = ("Distance", "Correlation", "Cointegration", "HalfLife")
 BENCHMARKS = CLASSICS
 HYBRIDS = {f"EMCR+{x}": ("EMCR", x) for x in CLASSICS}
-EXTENDED = ("EMCR+Coint+HalfLife", "EMCR+All", "EMCR|Coint")
+EXTENDED = ("EMCR+Coint+HalfLife", "EMCR+All", "EMCR|Coint", "EMCR-implied",
+            "EMCR-implied+Cointegration")
 PROPOSED = ("EMCR",) + tuple(HYBRIDS) + EXTENDED
 CRITERIA = BENCHMARKS + PROPOSED
 # Primary hypotheses: each hybrid against its own classical component, EMCR against
@@ -60,8 +63,8 @@ PRIMARY_TESTS = (tuple((f"EMCR+{x}", x) for x in CLASSICS) + tuple(("EMCR", x) f
 class Config:
     signal: str = PRIMARY_SIGNAL
     window: int = 140              # slow window (bars)
-    entry: float = 1.0
-    exit: float = 0.25
+    entry: float = 2.0
+    exit: float = 0.5
     n_pairs: int = 20
     weighting: str = "rank"        # "rank" (fixed rank weights) or "active" (paper Eq. 8)
     fast: int = 35                 # MAD fast window (bars)
@@ -78,18 +81,19 @@ class Config:
 
 
 PRIMARY = Config()
-ACTIVE_WEIGHTS = Config(weighting="active")                      # the submission's Eq. 8
-LEVEL_BASE = Config(signal="LEVEL", entry=2.0, exit=0.5)          # classic ratio z-score
-HEDGED_BASE = Config(signal="HEDGED", entry=2.0, exit=0.5)        # cointegrating spread
-MAD_ORIGINAL = Config(n_pairs=5, weighting="active")              # the submission's spec
+ACTIVE_WEIGHTS = Config(weighting="active")                          # the submission's Eq. 8
+MAD_RANK = Config(signal="MAD", entry=1.0, exit=0.25)                # original signal, 20 pairs
+MAD_ORIGINAL = Config(signal="MAD", entry=1.0, exit=0.25, n_pairs=5, weighting="active")
+HEDGED_BASE = Config(signal="HEDGED")                                # cointegrating spread
+LEVEL_BASE = PRIMARY
 
 
 def detailed() -> list[Config]:
     """Configurations stored bar by bar (performance, costs, trades, DM tests)."""
-    return [PRIMARY, ACTIVE_WEIGHTS, LEVEL_BASE, HEDGED_BASE, MAD_ORIGINAL]
+    return [PRIMARY, ACTIVE_WEIGHTS, MAD_RANK, MAD_ORIGINAL, HEDGED_BASE]
 
 
-# One-at-a-time sensitivity (editor: report favourable and unfavourable settings)
+# One-at-a-time sensitivity around the primary (favourable and unfavourable alike)
 GRID_N = (5, 10, 20, 30)
 
 
@@ -97,9 +101,9 @@ def grid() -> list[Config]:
     out = list(detailed())
     for n in GRID_N:
         out.append(Config(n_pairs=n))
-    for f, w in ((17, 70), (70, 280)):
-        out.append(Config(fast=f, window=w))
-    for e, x in ((0.75, 0.25), (1.25, 0.25), (1.0, 0.0), (1.0, 0.5)):
+    for w in (70, 280):
+        out.append(Config(window=w))
+    for e, x in ((1.5, 0.5), (2.5, 0.5), (2.0, 0.0), (2.0, 1.0)):
         out.append(Config(entry=e, exit=x))
     seen, uniq = set(), []
     for c in out:
