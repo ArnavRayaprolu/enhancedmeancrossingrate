@@ -84,6 +84,12 @@ def main():
                  "configuration in each dataset's sensitivity grid:\n")
         L.append(md(ds[ds.label.str.startswith("best")][["dataset", "config", "criterion", "sr",
                                                         "sr0", "dsr", "psr", "N"]], 3))
+    if (S / "delay_summary.csv").exists():
+        L.append("\n## 7b. Execution-delay robustness (decision at bar t, trade at bar t+1)\n")
+        L.append(md(pd.read_csv(S / "delay_summary.csv")))
+        L.append("\nSharpe by method with a one-bar delay:\n")
+        L.append(md(pd.read_csv(S / "sharpe_primary_lag1.csv").rename(
+            columns={"Unnamed: 0": "dataset"})))
     L.append("\n## 8. Costs: break-even one-way cost (bps) and turnover (x capital per year)\n")
     L.append(md(be.reset_index(), 1))
     L.append("\n")

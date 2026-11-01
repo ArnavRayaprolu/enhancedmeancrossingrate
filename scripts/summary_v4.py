@@ -104,6 +104,21 @@ def main():
             OUT / "ic_mean.csv")
         ic.pivot_table(index="dataset", columns="feature", values="t").reindex(ds_list).to_csv(
             OUT / "ic_t.csv")
+    # 6. execution-delay robustness (primary configuration executed one bar later)
+    lag_rows = {}
+    for d in ds_list:
+        f = RES / f"{d}_lag1" / "performance.csv"
+        if f.exists():
+            pl = pd.read_csv(f)
+            lag_rows[d] = pl[pl.config == C.DELAYED.key].set_index("criterion")["sharpe"]
+    if lag_rows:
+        lag = pd.DataFrame(lag_rows).T.reindex(columns=sh.columns)
+        lag.to_csv(OUT / "sharpe_primary_lag1.csv")
+        cmp_ = pd.DataFrame({"no_delay_mean": sh.loc[lag.index].mean(axis=1),
+                             "delay1_mean": lag.mean(axis=1),
+                             "best_delay1": lag.idxmax(axis=1), "best_delay1_sharpe": lag.max(axis=1)})
+        cmp_.to_csv(OUT / "delay_summary.csv")
+        print("\nExecution delay (1 bar)\n", cmp_.round(2).to_string())
     if spa:
         pd.concat(spa).to_csv(OUT / "spa.csv", index=False)
     if dsr:
