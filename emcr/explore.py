@@ -158,9 +158,10 @@ def _zcache(f: dict, signal: str, window: int, fast: int = 35):
             return f[k]
         s = spread(pa, pb, signal, f["beta"])
         z = zscore(s, signal, fast, window)
-        sd_rel = rolling_std(s, window) / np.abs(rolling_mean(s, window))
-        f[k] = dict(z=z.astype("float32"), mcr=signal_crossing_rate(z[tr]),
-                    halflife=half_life(s[tr]),
+        sdr = rolling_std(s, window) / np.abs(rolling_mean(s, window))
+        sd_rel = sdr
+        f[k] = dict(z=z.astype("float32"), sdr=sdr.astype("float32"),
+                    mcr=signal_crossing_rate(z[tr]), halflife=half_life(s[tr]),
                     sd_rel=np.nanmean(sd_rel[tr], axis=0))
     return f[k]
 
@@ -281,6 +282,12 @@ def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool)
         ch = np.vstack([np.zeros((1, z.shape[1])), (sg[1:] * sg[:-1] < 0)]).astype(float)
         rec = pd.DataFrame(ch).rolling(sp.gate, min_periods=sp.gate).mean().to_numpy()
         allow = rec >= zc["mcr"][chosen][None, :]
+    md = sp.params.get("min_dev_cost")
+    if md and "sdr" in zc:
+        # cost-aware entry: the ratio must also be at least md x round-trip cost
+        # (2 x kappa) away from its mean in percentage terms, |z| * SD/MA
+        ok = np.abs(z) * zc["sdr"][:, chosen] >= md * 2 * kappa
+        allow = ok if allow is None else (allow & ok)
     pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
                                stop=sp.stop, max_hold=sp.max_hold, allow=allow)
     a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
