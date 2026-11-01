@@ -1,0 +1,14 @@
+A,B,folds,wins,p_sign
+EMCR+Distance,Distance,15,11,0.11846923828124999
+EMCR+Correlation,Correlation,15,11,0.11846923828124999
+EMCR+Cointegration,Cointegration,15,8,1.0
+EMCR+HalfLife,HalfLife,15,10,0.30175781249999994
+EMCR,Distance,15,7,1.0
+EMCR,Correlation,15,9,0.6072387695312499
+EMCR,Cointegration,15,5,0.30175781249999994
+EMCR,HalfLife,15,8,1.0
+EMCR+Coint+HalfLife,Cointegration,15,7,1.0
+EMCR+All,Cointegration,15,8,1.0
+EMCR|Coint,Cointegration,15,7,1.0
+EMCR-implied,Cointegration,15,9,0.6072387695312499
+EMCR-implied+Cointegration,Cointegration,15,9,0.6072387695312499
