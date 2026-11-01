@@ -33,6 +33,10 @@ def main(names: list[str], reps: int = 2000, complete_case: bool = False) -> Non
         print(f"=== {tag}", flush=True)
         res = backtest.run(name, configs=C.detailed() if complete_case else None,
                            ic=not complete_case, complete_case=complete_case)
+        if len(res["folds"]) == 0:
+            print(f"=== {tag} skipped: history shorter than one walk-forward window "
+                  f"({C.TRAIN_BARS + C.TEST_BARS} bars)", flush=True)
+            continue
         with open(CACHE / f"{tag}.pkl", "wb") as fh:
             pickle.dump(res, fh)
         report.analyse(res, out=report.RESULTS / tag, reps=reps)
