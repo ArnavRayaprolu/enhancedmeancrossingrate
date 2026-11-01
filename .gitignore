@@ -9,3 +9,4 @@ paper/*.fdb_latexmk
 paper/*.synctex.gz
 data/_mirror/
 results/cache/
+results/mirror_perp_1h/
