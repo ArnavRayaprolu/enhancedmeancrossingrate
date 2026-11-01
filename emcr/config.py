@@ -220,3 +220,9 @@ DATASETS.update({
 
 COST_GRID_BPS = (0.0, 1.0, 2.0, 3.0, 5.0, 10.0, 20.0)
 SEED = 20261101
+
+# Daily crypto from Binance SPOT (2017-08 onwards, incl. later-delisted coins): longer
+# history than the perpetuals (2020+).  Spot costs: 10 bps taker + 1 bp spread, 10%/yr
+# borrow on short legs.
+DATASETS["crypto_spot_1d"] = Dataset("crypto_spot_1d", "binance_spot_1h", "1D", 365, 11.0, 0.10,
+                                     "Crypto (Binance spot), 1d", "all", 100, "crypto", "1d")

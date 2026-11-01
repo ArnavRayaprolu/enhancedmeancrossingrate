@@ -27,6 +27,8 @@ def datasets():
             d = f"{u}_{iv}"
             if d in C.DATASETS and (RES / d / "performance.csv").exists():
                 out.append(d)
+        if u == "crypto" and (RES / "crypto_spot_1d" / "performance.csv").exists():
+            out.append("crypto_spot_1d")
     return out
 
 
