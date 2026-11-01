@@ -161,3 +161,26 @@ def test_select_no_reuse():
     score = np.array([0.9, 0.8, 0.7, 0.6])
     ia = np.array([0, 0, 1, 2]); ib = np.array([1, 2, 3, 3])
     assert select(score, ia, ib, 3).tolist() == [0, 3]
+
+
+def test_stop_loss_and_rearm():
+    z = np.array([-2.1, -2.8, -3.1, -2.5, -2.2, -1.5, -2.2, -0.5, 0.1])[:, None]
+    st, closed = run_states(z, 2.0, 0.0, stop=3.0)
+    # stopped out at -3.1, not re-entered at -2.5/-2.2 (still outside the band),
+    # re-armed at -1.5, re-entered at -2.2, closed at the mean (0.1)
+    assert st[:, 0].tolist() == [1, 1, 0, 0, 0, 0, 1, 1, 0]
+    assert closed[0] == 1
+
+
+def test_max_hold():
+    z = np.full((10, 1), -2.5)
+    st, _ = run_states(z, 2.0, 0.0, max_hold=3)
+    assert st[:, 0].tolist()[:5] == [1, 1, 1, 0, 0]
+
+
+def test_funding_sign():
+    pos = np.ones((2, 1)); r0 = np.zeros((2, 1))
+    fa = np.array([[0.001], [0.0]]); fb = np.zeros((2, 1))
+    res = portfolio(pos, r0, r0, np.array([0.5]), np.array([-0.5]), np.array([1.0]),
+                    "equal", 0.0, fa, fb)
+    assert res["borrow"][0] == pytest.approx(0.5 * 0.001)   # long A pays funding

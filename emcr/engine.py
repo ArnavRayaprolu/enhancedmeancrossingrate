@@ -24,39 +24,55 @@ from __future__ import annotations
 import numpy as np
 
 
-def run_states(z: np.ndarray, entry: float, exit_: float) -> tuple[np.ndarray, np.ndarray]:
+def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = None,
+               max_hold: int | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Vectorised state machine over the columns of z (T x P).
+
+    Optional risk exits (off by default):
+      stop      close if the divergence widens to |z| >= stop against the position
+      max_hold  close after max_hold bars in the trade
+    After a risk exit the pair is not re-entered until z has come back inside
+    the entry band (|z| < entry), so a stopped-out trade is not re-opened at once.
 
     Returns
     -------
     states : (T, P) state after processing bar t
-    n_closed : (P,) number of completed round trips (exit events)
+    n_closed : (P,) number of round trips closed by reversion to the exit level
     """
     T, P = z.shape
-    s = np.zeros(P)
+    s = np.zeros(P); held = np.zeros(P); armed = np.ones(P, dtype=bool)
     out = np.zeros((T, P))
     closed = np.zeros(P)
     for t in range(T):
         zt = z[t]
         ok = np.isfinite(zt)
-        ex = ok & (((s > 0) & (zt >= -exit_)) | ((s < 0) & (zt <= exit_)))
-        closed += ex
-        s = np.where(ex, 0.0, s)
-        flat = ok & (s == 0)
+        held = np.where(s != 0, held + 1, 0)          # bars held, incl. this one
+        rev = ok & (((s > 0) & (zt >= -exit_)) | ((s < 0) & (zt <= exit_)))
+        risk = np.zeros(P, dtype=bool)
+        if stop is not None:
+            risk |= ok & (((s > 0) & (zt <= -stop)) | ((s < 0) & (zt >= stop)))
+        if max_hold is not None:
+            risk |= (s != 0) & (held >= max_hold)
+        risk &= ~rev
+        closed += rev
+        s = np.where(rev | risk, 0.0, s)
+        armed = np.where(risk, False, armed)
+        armed = np.where(ok & (np.abs(zt) < entry), True, armed)
+        flat = ok & (s == 0) & armed
         s = np.where(flat & (zt <= -entry), 1.0, s)
         s = np.where(flat & (zt >= entry), -1.0, s)
         out[t] = s
     return out, closed
 
 
-def completed_cycle_rate(z: np.ndarray, entry: float, exit_: float) -> np.ndarray:
+def completed_cycle_rate(z: np.ndarray, entry: float, exit_: float, **kw) -> np.ndarray:
     """CCR: completed entry-to-exit cycles per valid bar in the formation window.
 
     This is the empirical N(T)/T of the paper's Eq. (14): the number of round
     trips the engine itself would have completed in-sample.  Unlike MCR it
     ignores small oscillations around zero that never reach the entry band.
     """
-    _, closed = run_states(z, entry, exit_)
+    _, closed = run_states(z, entry, exit_, **kw)
     n = np.isfinite(z).sum(axis=0)
     out = np.full(z.shape[1], np.nan)
     ok = n > 0
@@ -65,13 +81,13 @@ def completed_cycle_rate(z: np.ndarray, entry: float, exit_: float) -> np.ndarra
 
 
 def positions_for_window(z: np.ndarray, start: int, end: int, entry: float,
-                         exit_: float) -> np.ndarray:
+                         exit_: float, **kw) -> np.ndarray:
     """Position held over each return bar t in [start, end).
 
     pos[t] = state after processing z[t-1]; decisions start at bar `start`
     (so the first bar is flat) and no decision is taken at the last bar
     (its position is liquidated at the close of the window)."""
-    st, _ = run_states(z[start:end - 1], entry, exit_)
+    st, _ = run_states(z[start:end - 1], entry, exit_, **kw)
     pos = np.zeros((end - start, z.shape[1]))
     pos[1:] = st
     return pos
@@ -82,7 +98,8 @@ def positions_for_window(z: np.ndarray, start: int, end: int, entry: float,
 # --------------------------------------------------------------------------- #
 def portfolio(pos: np.ndarray, rets_a: np.ndarray, rets_b: np.ndarray,
               a: np.ndarray, b: np.ndarray, score: np.ndarray, weighting: str,
-              borrow_per_bar: float) -> dict:
+              borrow_per_bar: float, fund_a: np.ndarray | None = None,
+              fund_b: np.ndarray | None = None) -> dict:
     """Account a portfolio of N pairs over one trading window.
 
     pos      (T, N)  position (+1/0/-1) held over each bar
@@ -119,5 +136,8 @@ def portfolio(pos: np.ndarray, rets_a: np.ndarray, rets_b: np.ndarray,
     turn[-1] += np.abs(drifted[-1]).sum()                  # final liquidation
     short = np.clip(-h, 0, None).sum(axis=1)
     borrow = short * borrow_per_bar
+    if fund_a is not None:
+        # perpetual funding settled during the bar: longs pay a positive rate
+        borrow = borrow + (h * np.concatenate([fund_a, fund_b], axis=1)).sum(axis=1)
     return dict(gross=gross, turn=turn, borrow=borrow, W=W, h=h,
                 exposure=np.abs(W).sum(axis=1))

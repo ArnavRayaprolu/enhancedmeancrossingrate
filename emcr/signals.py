@@ -46,6 +46,8 @@ def spread(pa: np.ndarray, pb: np.ndarray, signal: str, beta: np.ndarray | None 
     """The series whose deviations are traded."""
     if signal in ("MAD", "LEVEL"):
         return pa / pb
+    if signal == "STATIC":
+        return np.log(pa / pb)
     if signal == "HEDGED":
         return np.log(pa) - beta * np.log(pb)
     raise ValueError(signal)
