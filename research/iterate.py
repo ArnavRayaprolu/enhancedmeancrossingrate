@@ -116,6 +116,17 @@ def batch_it2():
     return specs
 
 
+def batch_it3():
+    """Members for multi-horizon ensembles: 5 horizons x 2 bands x 2 criteria x 2 sizes."""
+    specs = {}
+    for c, w, e, n in itertools.product(["MCR", "HalfLife"], [12, 24, 48, 72, 168],
+                                        [2.5, 3.0], [10, 20]):
+        specs[f"{c}|w{w}|e{e}|n{n}"] = Spec(
+            criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=n, max_uses=1,
+            top_k=100, weighting="rank")
+    return specs
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 3
