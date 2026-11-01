@@ -1,0 +1,55 @@
+name: download-data
+
+# Downloads the free market data used by the study (Yahoo Finance, Binance bulk
+# archive) on a GitHub-hosted runner and commits the parquet files to the branch
+# that triggered the run. Re-run manually from the Actions tab if needed.
+
+on:
+  push:
+    paths:
+      - scripts/download_data.py
+      - .github/workflows/download-data.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: download-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        dataset: [sp500_1h, sp500_1d, etf_1d, binance_1h]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install "yfinance>=0.2.54" pandas numpy pyarrow requests
+
+      - name: Download ${{ matrix.dataset }}
+        run: python scripts/download_data.py ${{ matrix.dataset }}
+
+      - name: Commit data/${{ matrix.dataset }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          git add data/${{ matrix.dataset }}
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "data: ${{ matrix.dataset }} (downloaded by GitHub Actions)"
+          for i in 1 2 3 4 5 6; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep $((i * 10))
+          done
+          exit 1
