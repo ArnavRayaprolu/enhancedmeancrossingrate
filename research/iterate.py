@@ -26,23 +26,29 @@ VENUES = ["perp_1h", "binance_1h", "coinbase_1h", "okx_1h"]
 OUT = Path("results/iterations")
 
 
-def evaluate_many(ds_name: str, specs: dict, top_k: int = 100) -> dict:
-    ds = replace(C.DATASETS[ds_name], top_k=top_k)
-    close, dvol, meta = load(ds)
-    perp = ds.source.startswith("binance_perp")
+def evaluate_many(ds_name: str, specs: dict) -> dict:
+    """Stream over walk-forward windows; one universe per distinct spec.top_k."""
+    base = C.DATASETS[ds_name]
+    close, dvol, meta = load(base)
+    perp = base.source.startswith("binance_perp")
     fund = load_funding(close.index) if perp else None
-    kappa = ds.cost_bps / 1e4
-    borrow_bar = 0.0 if perp else ds.borrow_pa / ds.bars_per_year
+    kappa = base.cost_bps / 1e4
+    borrow_bar = 0.0 if perp else base.borrow_pa / base.bars_per_year
+    ks = sorted({sp.top_k for sp in specs.values()})
     acc = {k: ([], [], []) for k in specs}
     for f in make_folds(len(close)):
-        fd = build_fold(close, dvol, meta, ds, f, C.TRAIN_BARS, fund)
-        if fd is None:
-            continue
-        idx = fd["idx"][fd["train"]:]
-        for k, sp in specs.items():
-            n, g, u = run_fold(fd, sp, kappa, borrow_bar, perp)
-            acc[k][0].append(pd.Series(n, index=idx))
-            acc[k][1].append(g.sum()); acc[k][2].append(u.sum())
+        for tk in ks:
+            fd = build_fold(close, dvol, meta, replace(base, top_k=tk), f, C.TRAIN_BARS, fund)
+            if fd is None:
+                continue
+            idx = fd["idx"][fd["train"]:]
+            for k, sp in specs.items():
+                if sp.top_k != tk:
+                    continue
+                n, g, u = run_fold(fd, sp, kappa, borrow_bar, perp)
+                acc[k][0].append(pd.Series(n, index=idx))
+                acc[k][1].append(g.sum()); acc[k][2].append(u.sum())
+    ds = base
     out = {}
     bpy = ds.bars_per_year
     for k, (nets, gs, us) in acc.items():
@@ -135,6 +141,19 @@ def batch_it4():
         specs[f"{c}|w{w}|e{e}|n{n}"] = Spec(
             criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=n, max_uses=1,
             top_k=100, weighting="rank")
+    return specs
+
+
+def batch_bounce():
+    """Bid-ask-bounce check: leading designs with a 0- or 1-bar execution delay and a
+    top-100 or top-50 (more liquid) universe; cointegration as benchmark."""
+    specs = {}
+    for c, (w, e, n), lag, k in itertools.product(
+            ["MCR", "HalfLife", "Cointegration"],
+            [(12, 2.0, 5), (12, 2.5, 10), (6, 2.0, 10)], [0, 1], [100, 50]):
+        specs[f"{c}|w{w}|e{e}|n{n}|lag{lag}|k{k}"] = Spec(
+            criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=n, max_uses=1,
+            top_k=k, weighting="rank", params={"lag": lag} if lag else {})
     return specs
 
 

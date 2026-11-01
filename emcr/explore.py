@@ -290,6 +290,11 @@ def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool)
         allow = ok if allow is None else (allow & ok)
     pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
                                stop=sp.stop, max_hold=sp.max_hold, allow=allow)
+    lag = int(sp.params.get("lag", 0))
+    if lag:
+        # execution delay: a decision taken at the close of bar t is executed at the
+        # close of bar t+lag (guards against bid-ask bounce in last-trade prices)
+        pos = np.vstack([np.zeros((lag, pos.shape[1])), pos[:-lag]])
     a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
     ia, ib = f["ia"][chosen], f["ib"][chosen]
     r = f["rets"][te]
