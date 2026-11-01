@@ -415,6 +415,78 @@ def nifty50_1h(name="nifty50_1h"):
     m.to_csv(DATA / name / "meta.csv", index=False)
 
 
+# --------------------------------------------------------------------------- #
+# Yahoo Finance universes: S&P 500 stocks, NIFTY 50 stocks, index funds (ETFs)
+# --------------------------------------------------------------------------- #
+ETFS = {
+    "XLB": "US sector", "XLE": "US sector", "XLF": "US sector", "XLI": "US sector",
+    "XLK": "US sector", "XLP": "US sector", "XLU": "US sector", "XLV": "US sector",
+    "XLY": "US sector", "XLC": "US sector", "XLRE": "US sector",
+    "SPY": "US broad", "QQQ": "US broad", "DIA": "US broad", "IWM": "US broad",
+    "MDY": "US broad", "IVV": "US broad", "VTI": "US broad", "VOO": "US broad",
+    "IWD": "US broad", "IWF": "US broad", "RSP": "US broad",
+    "SMH": "US industry", "IBB": "US industry", "KBE": "US industry", "KRE": "US industry",
+    "XHB": "US industry", "XRT": "US industry", "XME": "US industry", "XOP": "US industry",
+    "OIH": "US industry", "ITB": "US industry", "IYR": "US industry", "VNQ": "US industry",
+    "IYT": "US industry", "ITA": "US industry", "IHI": "US industry", "SOXX": "US industry",
+    "EWA": "Intl equity", "EWC": "Intl equity", "EWG": "Intl equity", "EWH": "Intl equity",
+    "EWJ": "Intl equity", "EWU": "Intl equity", "EWW": "Intl equity", "EWY": "Intl equity",
+    "EWZ": "Intl equity", "EWT": "Intl equity", "EFA": "Intl equity", "EEM": "Intl equity",
+    "VGK": "Intl equity", "FXI": "Intl equity", "INDA": "Intl equity", "MCHI": "Intl equity",
+    "TLT": "Fixed income", "IEF": "Fixed income", "SHY": "Fixed income", "LQD": "Fixed income",
+    "HYG": "Fixed income", "TIP": "Fixed income", "AGG": "Fixed income", "BND": "Fixed income",
+    "EMB": "Fixed income", "GLD": "Commodity", "SLV": "Commodity", "USO": "Commodity",
+    "DBC": "Commodity", "GDX": "Commodity", "UUP": "Commodity",
+}
+
+
+def _universe_meta(universe: str) -> pd.DataFrame:
+    if universe == "sp500":
+        m = pd.read_csv(DATA / "sp500_constituents.csv")
+        return pd.DataFrame({"ticker": m["Symbol"].str.replace(".", "-", regex=False).str.strip(),
+                             "group": m["GICS Sector"], "name": m["Security"],
+                             "date_added": m["Date added"]})
+    if universe == "nifty50":
+        m = pd.read_csv(DATA / "nifty50_1h" / "meta.csv").fillna("")
+        return m[["ticker", "group", "name"]].assign(date_added="")
+    if universe == "etf":
+        return pd.DataFrame({"ticker": list(ETFS), "group": list(ETFS.values()),
+                             "name": list(ETFS), "date_added": ""})
+    raise ValueError(universe)
+
+
+def yahoo(universe: str, interval: str, period: str | None, name: str,
+          start: str | None = None, batch: int = 50):
+    import yfinance as yf
+    meta = _universe_meta(universe)
+    suffix = ".NS" if universe == "nifty50" else ""
+    tick = list(meta["ticker"])
+    frames = {}
+    for i in range(0, len(tick), batch):
+        chunk = [t + suffix for t in tick[i:i + batch]]
+        kw = dict(period=period) if period else dict(start=start)
+        for attempt in range(5):
+            try:
+                df = yf.download(chunk, interval=interval, auto_adjust=True, progress=False,
+                                 threads=True, group_by="column", **kw)
+                break
+            except Exception as exc:
+                print(f"  retry {attempt}: {exc}", flush=True); time.sleep(10 * (attempt + 1))
+        else:
+            continue
+        c, v = df["Close"], df["Volume"]
+        if isinstance(c, pd.Series):
+            c, v = c.to_frame(chunk[0]), v.to_frame(chunk[0])
+        for col in c.columns:
+            if c[col].notna().sum() > 10:
+                frames[col.replace(suffix, "") if suffix else col] = pd.DataFrame(
+                    {"close": c[col], "qvol": c[col] * v[col]})
+        print(f"  [{name}] {min(i + batch, len(tick))}/{len(tick)}", flush=True)
+        time.sleep(2)
+    _save(name, frames, "yahoo")
+    meta[meta["ticker"].isin(frames)].to_csv(DATA / name / "meta.csv", index=False)
+
+
 TASKS = {
     "binance_spot_1h": lambda: binance("spot", "1h", "2017-08", "binance_spot_1h"),
     "binance_spot_15m": lambda: binance("spot", "15m", "2021-01", "binance_spot_15m", top=40),
@@ -427,6 +499,13 @@ TASKS = {
     "bybit_1h": bybit,
     "binance_perp_funding": binance_funding,
     "nifty50_1h": nifty50_1h,
+    "sp500_5m": lambda: yahoo("sp500", "5m", "60d", "sp500_5m"),
+    "nifty50_5m": lambda: yahoo("nifty50", "5m", "60d", "nifty50_5m"),
+    "etf_5m": lambda: yahoo("etf", "5m", "60d", "etf_5m"),
+    "etf_1h": lambda: yahoo("etf", "1h", "730d", "etf_1h"),
+    "nifty50_1d": lambda: yahoo("nifty50", "1d", None, "nifty50_1d", start="2008-01-01"),
+    "binance_perp_5m": lambda: binance("futures/um", "5m", "2025-01", "binance_perp_5m",
+                                       top=40),
 }
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 name: download-data
 
-# Downloads the free cryptocurrency data used by the study (Binance bulk
-# archive, Coinbase, Bitstamp, OKX, Bybit) on a GitHub-hosted runner and commits the parquet files to the branch
+# Downloads the free data used by the study (Binance bulk archive, Yahoo
+# Finance, Coinbase, Bitstamp, OKX) on a GitHub-hosted runner and commits the parquet files to the branch
 # that triggered the run. Re-run manually from the Actions tab if needed.
 
 on:
@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dataset: [binance_perp_funding, nifty50_1h]
+        dataset: [sp500_5m, nifty50_5m, etf_5m, etf_1h, nifty50_1d, binance_perp_5m]
     steps:
       - uses: actions/checkout@v4
         with:
