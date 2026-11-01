@@ -174,3 +174,14 @@ SEED = 20261101
 # chose the symbols, so it is survivorship-biased; used only to test the code.
 DATASETS["mirror_perp_1h"] = Dataset("mirror_perp_1h", "_mirror/perp39_std", None, H, 6.0,
                                      0.10, "Perpetuals mirror, 1h (code test)", role="test")
+
+# Equity markets used ONLY as untouched hold-out tests of the frozen crypto
+# finalist (free hourly history covers Nov 2024 - Oct 2026, all inside the
+# hold-out period).  5 bps per side; 0.5%/yr borrow on S&P shorts; NIFTY
+# shorts via single-stock futures (no borrow fee, cost included in the 5 bps).
+DATASETS["sp500_1h_all"] = Dataset("sp500_1h_all", "sp500_1h", None, 7 * 252, 5.0, 0.005,
+                                   "S&P 500, 1h", pairs="all", top_k=100)
+DATASETS["sp500_1h_sector"] = Dataset("sp500_1h_sector", "sp500_1h", None, 7 * 252, 5.0, 0.005,
+                                      "S&P 500, 1h (within sector)", pairs="sector", top_k=100)
+DATASETS["nifty50_1h"] = Dataset("nifty50_1h", "nifty50_1h", None, 7 * 250, 5.0, 0.0,
+                                 "NIFTY 50, 1h", pairs="all", top_k=100)

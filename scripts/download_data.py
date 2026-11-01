@@ -373,6 +373,48 @@ def binance_funding(name="binance_perp_funding", start="2020-01"):
     print(f"[{name}] {f.shape}", flush=True)
 
 
+# NIFTY 50 constituents (fallback if the official list cannot be fetched;
+# approximate 2025-26 composition, includes recent additions/removals).
+NIFTY50_FALLBACK = """ADANIENT ADANIPORTS APOLLOHOSP ASIANPAINT AXISBANK BAJAJ-AUTO BAJFINANCE
+BAJAJFINSV BEL BHARTIARTL CIPLA COALINDIA DRREDDY EICHERMOT ETERNAL GRASIM HCLTECH HDFCBANK
+HDFCLIFE HEROMOTOCO HINDALCO HINDUNILVR ICICIBANK INDUSINDBK INFY ITC JIOFIN JSWSTEEL
+KOTAKBANK LT M&M MARUTI NESTLEIND NTPC ONGC POWERGRID RELIANCE SBILIFE SHRIRAMFIN SBIN
+SUNPHARMA TATACONSUM TMPV TATASTEEL TCS TECHM TITAN TRENT ULTRACEMCO WIPRO INDIGO
+MAXHEALTH""".split()
+
+
+def nifty50_1h(name="nifty50_1h"):
+    """NIFTY 50 constituents, hourly, last 730 days (Yahoo Finance, '.NS' tickers)."""
+    meta = None
+    try:
+        r = _session.get("https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv",
+                         timeout=30)
+        if r.status_code == 200 and "Symbol" in r.text:
+            m = pd.read_csv(io.StringIO(r.text))
+            meta = pd.DataFrame({"ticker": m["Symbol"].str.strip(),
+                                 "group": m["Industry"].str.strip(),
+                                 "name": m["Company Name"].str.strip(), "date_added": ""})
+            print(f"[{name}] official list: {len(meta)} constituents", flush=True)
+    except Exception as exc:
+        print(f"[{name}] official list unavailable ({exc}); using fallback", flush=True)
+    if meta is None:
+        meta = pd.DataFrame({"ticker": NIFTY50_FALLBACK, "group": "all",
+                             "name": NIFTY50_FALLBACK, "date_added": ""})
+    import yfinance as yf
+    yt = [t + ".NS" for t in meta["ticker"]]
+    df = yf.download(yt, period="730d", interval="1h", auto_adjust=True, progress=False,
+                     threads=True, group_by="column")
+    close = df["Close"].dropna(how="all", axis=1)
+    vol = df["Volume"].reindex(columns=close.columns)
+    close.columns = [c.replace(".NS", "") for c in close.columns]
+    vol.columns = close.columns
+    frames = {c: pd.DataFrame({"close": close[c], "qvol": close[c] * vol[c]})
+              for c in close.columns}
+    _save(name, frames, "yahoo-nse")
+    m = meta[meta["ticker"].isin(close.columns)]
+    m.to_csv(DATA / name / "meta.csv", index=False)
+
+
 TASKS = {
     "binance_spot_1h": lambda: binance("spot", "1h", "2017-08", "binance_spot_1h"),
     "binance_spot_15m": lambda: binance("spot", "15m", "2021-01", "binance_spot_15m", top=40),
@@ -384,6 +426,7 @@ TASKS = {
     "okx_1h": okx,
     "bybit_1h": bybit,
     "binance_perp_funding": binance_funding,
+    "nifty50_1h": nifty50_1h,
 }
 
 if __name__ == "__main__":
