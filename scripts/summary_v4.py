@@ -17,6 +17,7 @@ RES = Path(__file__).resolve().parents[1] / "results"
 OUT = RES / "summary_v4"
 UNIVERSES = ["crypto", "sp500", "nifty50", "etf"]
 INTERVALS = ["5m", "15m", "30m", "1h", "4h", "1d"]
+MIN_FOLDS = 5          # datasets with fewer walk-forward windows are shown but not ranked
 
 
 def datasets():
@@ -51,7 +52,9 @@ def main():
         if (r / "dsr.csv").exists():
             s = pd.read_csv(r / "dsr.csv"); s["dataset"] = d; dsr.append(s)
     perf = pd.concat(perf); dms = pd.concat(dms)
-    pd.DataFrame(folds).to_csv(OUT / "data_overview.csv", index=False)
+    fo = pd.DataFrame(folds); fo["ranked"] = fo["folds"] >= MIN_FOLDS
+    fo.to_csv(OUT / "data_overview.csv", index=False)
+    ranked = set(fo.loc[fo.ranked, "dataset"])
 
     # 1. Sharpe matrix (primary configuration)
     prim = perf[perf.config == P]
@@ -68,22 +71,24 @@ def main():
             sh.columns].to_csv(OUT / f"{col}_primary.csv")
 
     # 2. ranking of selection methods across datasets
-    rank = sh.rank(axis=1, ascending=False)
-    summ = pd.DataFrame({"mean_sharpe": sh.mean(), "median_sharpe": sh.median(),
-                         "share_positive": (sh > 0).mean(), "mean_rank": rank.mean(),
+    shr = sh.loc[[d for d in sh.index if d in ranked]]
+    rank = shr.rank(axis=1, ascending=False)
+    summ = pd.DataFrame({"mean_sharpe": shr.mean(), "median_sharpe": shr.median(),
+                         "share_positive": (shr > 0).mean(), "mean_rank": rank.mean(),
                          "times_best": (rank == 1).sum()}).sort_values("mean_rank")
     summ.to_csv(OUT / "method_ranking.csv")
 
     # 3. hybrid vs its own classical component, dataset by dataset
     rows = []
     for h, x in [(f"EMCR+{c}", c) for c in C.CLASSICS] + [(e, "Cointegration") for e in C.EXTENDED]:
-        diff = (sh[h] - sh[x]).dropna()
+        diff = (shr[h] - shr[x]).dropna()
         rows.append(dict(hybrid=h, component=x, datasets=len(diff), hybrid_better=int((diff > 0).sum()),
                          median_sharpe_gain=float(diff.median()), mean_sharpe_gain=float(diff.mean())))
     pd.DataFrame(rows).to_csv(OUT / "hybrid_vs_component.csv", index=False)
 
     # 4. pre-registered DM tests, primary configuration, Holm within dataset and overall
-    keep = dms[(dms.config == P) & dms.apply(lambda r: (r.A, r.B) in C.PRIMARY_TESTS, axis=1)].copy()
+    keep = dms[(dms.config == P) & dms.dataset.isin(ranked)
+               & dms.apply(lambda r: (r.A, r.B) in C.PRIMARY_TESTS, axis=1)].copy()
     keep["holm_within"] = keep.groupby("dataset")["p_nw"].transform(lambda p: I.holm(p.to_numpy()))
     keep["holm_all"] = I.holm(keep["p_nw"].to_numpy())
     keep[["dataset", "A", "B", "dm_nw", "p_nw", "p_nw2", "p_andrews", "p_boot", "lag_nw",
@@ -103,6 +108,8 @@ def main():
         pd.concat(dsr).to_csv(OUT / "dsr.csv", index=False)
 
     pd.set_option("display.width", 250); pd.set_option("display.max_columns", 20)
+    print("Walk-forward windows per dataset\n", fo[["dataset", "folds", "first", "last",
+                                                     "ranked"]].to_string(index=False))
     print("Sharpe, primary configuration\n", sh.round(2).to_string())
     print("\nMethod ranking\n", summ.round(2).to_string())
     print("\nHybrid vs component\n", pd.DataFrame(rows).round(2).to_string(index=False))
