@@ -184,3 +184,11 @@ def test_funding_sign():
     res = portfolio(pos, r0, r0, np.array([0.5]), np.array([-0.5]), np.array([1.0]),
                     "equal", 0.0, fa, fb)
     assert res["borrow"][0] == pytest.approx(0.5 * 0.001)   # long A pays funding
+
+
+def test_magnitude_filtered_crossings():
+    # ratio deviation d (fraction): tiny wiggles around the mean, then two real
+    # excursions of 3% that come back through the mean
+    d = np.r_[0.002, -0.002, 0.001, -0.001, 0.03, 0.01, -0.001, -0.03, -0.01, 0.002][:, None]
+    assert signal_crossing_rate(d)[0] > 0.5                    # plain count: many
+    assert completed_cycle_rate(d, 0.02, 0.0)[0] == pytest.approx(2 / 10)  # filtered: 2

@@ -121,6 +121,17 @@ def _zcache(f: dict, signal: str, window: int, fast: int = 35):
     if k not in f:
         pa, pb = f["px"][:, f["ia"]], f["px"][:, f["ib"]]
         tr = slice(0, f["train"])
+        if signal in ("RATIO_FIX", "RATIO_MA"):
+            # the raw price ratio, no z-score: d = r / mean(r) - 1 is the ratio's
+            # percentage distance from its mean.  RATIO_FIX: the mean is the fixed
+            # formation-period average; RATIO_MA: a trailing `window`-bar average.
+            r = pa / pb
+            m = (np.broadcast_to(r[tr].mean(0), r.shape) if signal == "RATIO_FIX"
+                 else rolling_mean(r, window))
+            d = r / m - 1.0
+            f[k] = dict(z=d.astype("float32"), mcr=signal_crossing_rate(d[tr]),
+                        halflife=half_life(r[tr]), sd_rel=np.nanstd(d[tr], axis=0))
+            return f[k]
         if signal == "STATIC":
             # log price ratio around its FIXED formation-period mean (Gatev et al.)
             s = np.log(pa / pb)
@@ -193,6 +204,15 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
         # cycle, gain ~ 1/2 * entry * relative sd of the ratio, minus round-trip cost
         g = 0.5 * sp.entry * zc["sd_rel"] - 2 * kappa
         s = rk(_ccr(f, sp) * g)
+    elif c == "MCRmag":
+        # magnitude-filtered mean-crossing rate: a crossing of the mean only counts
+        # if the ratio first moved at least `delta` (fraction, e.g. 0.01 = 1%) away
+        # from its mean since the previous counted crossing
+        delta = sp.params.get("delta", sp.entry)
+        k2 = ("mag", sp.signal, sp.window, delta)
+        if k2 not in f:
+            f[k2] = completed_cycle_rate(zc["z"][:f["train"]], delta, 0.0)
+        s = rk(f[k2])
     elif c == "MCR2":
         # two-horizon mean-crossing rate: crossings of the ratio through its fast
         # moving mean (tempo) and through its long-run formation mean (equilibrium)
