@@ -7,3 +7,6 @@ EMCR,Distance,2,1,1.0
 EMCR,Correlation,2,2,0.5
 EMCR,Cointegration,2,1,1.0
 EMCR,HalfLife,2,1,1.0
+EMCR+Coint+HalfLife,Cointegration,2,2,0.5
+EMCR+All,Cointegration,2,1,1.0
+EMCR|Coint,Cointegration,2,2,0.5

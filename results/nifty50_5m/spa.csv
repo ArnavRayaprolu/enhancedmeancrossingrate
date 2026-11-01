@@ -1,5 +1,5 @@
 scope,benchmark,spa_p,rc_p,spa_lower_p,K,T,block
-all,"own classical component (EMCR: cointegration), same config",0.9855,0.986,0.9425,70,48,1.4977456755313012
-MAD,"own classical component (EMCR: cointegration), same config",0.965,0.965,0.907,60,48,1.5595842055131484
-LEVEL,"own classical component (EMCR: cointegration), same config",0.4655,0.4655,0.3405,5,48,2.391284823190331
-HEDGED,"own classical component (EMCR: cointegration), same config",0.417,0.417,0.417,5,48,1.0518638048301092
+all,"own classical component (EMCR: cointegration), same config",0.472,0.472,0.365,112,48,1.5595842055131484
+MAD,"own classical component (EMCR: cointegration), same config",0.472,0.472,0.365,96,48,1.5595842055131484
+LEVEL,"own classical component (EMCR: cointegration), same config",0.521,0.521,0.41,8,48,2.2698142571908684
+HEDGED,"own classical component (EMCR: cointegration), same config",0.155,0.155,0.155,8,48,1.156585806438249
