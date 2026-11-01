@@ -26,7 +26,8 @@ VENUES = ["perp_1h", "binance_1h", "coinbase_1h", "okx_1h"]
 OUT = Path("results/iterations")
 
 
-def evaluate_many(ds_name: str, specs: dict) -> dict:
+def evaluate_many(ds_name: str, specs: dict, train: int = C.TRAIN_BARS,
+                  test: int = C.TEST_BARS) -> dict:
     """Stream over walk-forward windows; one universe per distinct spec.top_k."""
     base = C.DATASETS[ds_name]
     close, dvol, meta = load(base)
@@ -36,9 +37,9 @@ def evaluate_many(ds_name: str, specs: dict) -> dict:
     borrow_bar = 0.0 if perp else base.borrow_pa / base.bars_per_year
     ks = sorted({sp.top_k for sp in specs.values()})
     acc = {k: ([], [], []) for k in specs}
-    for f in make_folds(len(close)):
+    for f in make_folds(len(close), train, test):
         for tk in ks:
-            fd = build_fold(close, dvol, meta, replace(base, top_k=tk), f, C.TRAIN_BARS, fund)
+            fd = build_fold(close, dvol, meta, replace(base, top_k=tk), f, train, fund)
             if fd is None:
                 continue
             idx = fd["idx"][fd["train"]:]
@@ -63,10 +64,14 @@ def evaluate_many(ds_name: str, specs: dict) -> dict:
     return out
 
 
+SCALE = {"perp_15m": 4, "binance_15m": 4, "perp_30m": 2, "binance_30m": 2}
+
+
 def _job(args):
     ds, specs = args
     t = time.time()
-    res = evaluate_many(ds, specs)
+    m = SCALE.get(ds, 1) if specs and next(iter(specs.values())).params.get("hourly_design") else 1
+    res = evaluate_many(ds, specs, C.TRAIN_BARS * m, C.TEST_BARS * m)
     for v in res.values():
         v["seconds"] = time.time() - t
     return ds, res
@@ -154,6 +159,21 @@ def batch_bounce():
         specs[f"{c}|w{w}|e{e}|n{n}|lag{lag}|k{k}"] = Spec(
             criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=n, max_uses=1,
             top_k=k, weighting="rank", params={"lag": lag} if lag else {})
+    return specs
+
+
+def batch_exec15():
+    """Hourly design executed on 15-minute prices: all windows x4 in 15m bars
+    (12h mean = 48 bars, 630/315-hour walk-forward), execution delay 0 / 1 / 4
+    bars (0 / 15 / 60 minutes)."""
+    specs = {}
+    for c, (wh, e, n), lag in itertools.product(
+            ["MCR", "HalfLife", "Cointegration", "Distance"],
+            [(12, 2.0, 5), (12, 2.5, 10), (24, 2.5, 10)], [0, 1, 4]):
+        specs[f"{c}|w{wh}h|e{e}|n{n}|delay{lag * 15}m"] = Spec(
+            criterion=c, signal="LEVEL", window=wh * 4, entry=e, exit=0.0, n_pairs=n,
+            max_uses=1, top_k=100, weighting="rank",
+            params={"lag": lag, "hourly_design": True})
     return specs
 
 
