@@ -1,9 +1,0 @@
-A,B,folds,wins,p_sign
-EMCR+Distance,Distance,12,6,1.0
-EMCR+Correlation,Correlation,12,6,1.0
-EMCR+Cointegration,Cointegration,12,4,0.3876953125
-EMCR+HalfLife,HalfLife,12,4,0.3876953125
-EMCR,Distance,12,8,0.3876953125
-EMCR,Correlation,12,6,1.0
-EMCR,Cointegration,12,6,1.0
-EMCR,HalfLife,12,7,0.7744140625

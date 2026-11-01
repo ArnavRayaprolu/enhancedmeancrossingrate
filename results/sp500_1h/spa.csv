@@ -1,5 +1,0 @@
-scope,benchmark,spa_p,rc_p,spa_lower_p,K,T,block
-all,Cointegration (same config),0.759,0.7665,0.6115,448,635,1.0081901524827732
-LEVEL,Cointegration (same config),0.7295,0.7375,0.6,432,635,1.0081901524827732
-HEDGED,Cointegration (same config),0.985,0.985,0.7715,8,635,1.3170341844362343
-MAD,Cointegration (same config),0.8875,0.8875,0.742,8,635,1.35957355734224

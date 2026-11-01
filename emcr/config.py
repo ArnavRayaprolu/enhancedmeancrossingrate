@@ -22,8 +22,10 @@ Fixed strategy
                on short stock legs, actual funding on crypto perpetuals, drift
                re-balancing and window-end liquidation charged
 
-Selection methods (9): Distance, Correlation, Cointegration, Half-life, EMCR, and
-the hybrids EMCR+X = 1/2 rk(EMCR) + 1/2 rk(X) for every classical X.
+Selection methods (12): Distance, Correlation, Cointegration, Half-life, EMCR,
+the hybrids EMCR+X = 1/2 rk(EMCR) + 1/2 rk(X) for every classical X, the three-way
+EMCR+Coint+HalfLife, EMCR+All (1/2 EMCR + 1/2 mean of the four classics), and the
+filter-then-rank EMCR|Coint (Engle-Granger p < 0.10, ranked by EMCR).
 """
 from __future__ import annotations
 
@@ -44,11 +46,14 @@ PRIMARY_SIGNAL = "MAD"
 CLASSICS = ("Distance", "Correlation", "Cointegration", "HalfLife")
 BENCHMARKS = CLASSICS
 HYBRIDS = {f"EMCR+{x}": ("EMCR", x) for x in CLASSICS}
-PROPOSED = ("EMCR",) + tuple(HYBRIDS)
+EXTENDED = ("EMCR+Coint+HalfLife", "EMCR+All", "EMCR|Coint")
+PROPOSED = ("EMCR",) + tuple(HYBRIDS) + EXTENDED
 CRITERIA = BENCHMARKS + PROPOSED
-# Primary hypotheses: each hybrid against its own classical component, and EMCR
-# against each classical criterion (Diebold-Mariano, Holm-adjusted).
-PRIMARY_TESTS = tuple((f"EMCR+{x}", x) for x in CLASSICS) + tuple(("EMCR", x) for x in CLASSICS)
+# Primary hypotheses: each hybrid against its own classical component, EMCR against
+# each classical criterion, and each extended hybrid against cointegration
+# (Diebold-Mariano, Holm-adjusted).
+PRIMARY_TESTS = (tuple((f"EMCR+{x}", x) for x in CLASSICS) + tuple(("EMCR", x) for x in CLASSICS)
+                 + tuple((h, "Cointegration") for h in EXTENDED))
 
 
 @dataclass(frozen=True)

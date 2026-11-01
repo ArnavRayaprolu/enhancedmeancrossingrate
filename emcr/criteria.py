@@ -110,6 +110,11 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
     }
     for h, (f1, f2) in C.HYBRIDS.items():
         rk[h] = 0.5 * rk[f1] + 0.5 * rk[f2]
+    # extended hybrids
+    rk["EMCR+Coint+HalfLife"] = (rk["EMCR"] + rk["Cointegration"] + rk["HalfLife"]) / 3
+    rk["EMCR+All"] = 0.5 * rk["EMCR"] + 0.5 * np.mean([rk[x] for x in C.CLASSICS], axis=0)
+    # filter-then-rank: only pairs with Engle-Granger p < 0.10, ranked by EMCR
+    rk["EMCR|Coint"] = np.where(stats["coint_p"] < 0.10, rk["EMCR"], 0.0)
     return rk
 
 
