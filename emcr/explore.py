@@ -36,8 +36,13 @@ _MEM: dict = {}
 
 
 def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
-              start: str | None = None, top_k: int | None = None) -> list[dict]:
-    key = CACHE / f"dev_{ds_name}_{train}_{test}_{start}_{top_k}.pkl"
+              start: str | None = None, top_k: int | None = None,
+              period: str = "dev") -> list[dict]:
+    """period="dev": trading windows ending before HOLDOUT_START (the search data).
+    period="holdout": trading windows starting on/after HOLDOUT_START (final exam)."""
+    assert period in ("dev", "holdout")
+    tag = "dev" if period == "dev" else "holdout"
+    key = CACHE / f"{tag}_{ds_name}_{train}_{test}_{start}_{top_k}.pkl"
     if key in _MEM:
         return _MEM[key]
     if key.exists():
@@ -57,8 +62,11 @@ def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
     folds = []
     for f in make_folds(len(close), train, test):
         test_end = close.index[f["end"] - 1]
-        if test_end >= HOLDOUT_START:
+        test_start = close.index[f["train_end"]]
+        if period == "dev" and test_end >= HOLDOUT_START:
             break
+        if period == "holdout" and test_start < HOLDOUT_START:
+            continue
         names = eligible(close, dvol, meta, ds, f)
         if len(names) < 4:
             continue
@@ -205,15 +213,19 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
 
 def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: bool = True,
              train: int = C.TRAIN_BARS, test: int = C.TEST_BARS, start: str | None = None,
-             log: bool = True, note: str = "") -> dict:
+             log: bool = True, note: str = "", period: str = "dev") -> dict:
     ds = C.DATASETS[ds_name]
     kappa = (cost_bps if cost_bps is not None else ds.cost_bps) / 1e4
     use_fund = funding and ds.source == "binance_perp_1h"
     borrow_bar = 0.0 if use_fund else ds.borrow_pa / ds.bars_per_year
     nets, gross, turn = [], [], []
-    for f in dev_folds(ds_name, train, test, start, None if sp.top_k == 40 else sp.top_k):
+    for f in dev_folds(ds_name, train, test, start, None if sp.top_k == 40 else sp.top_k,
+                       period):
         te = slice(f["train"], len(f["idx"]))
-        assert f["idx"][-1] < HOLDOUT_START
+        if period == "dev":
+            assert f["idx"][-1] < HOLDOUT_START
+        else:
+            assert f["idx"][te][0] >= HOLDOUT_START
         sc = scores(f, sp, kappa)
         chosen = select(sc, f["ia"], f["ib"], sp.n_pairs, sp.max_uses)
         if len(chosen) == 0:
@@ -254,7 +266,8 @@ def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: boo
              turnover_pa=float(np.sum(turn) / len(net) * ds.bars_per_year),
              n_bars=len(net), first=str(net.index[0])[:10], last=str(net.index[-1])[:10],
              note=note, time=time.strftime("%Y-%m-%d %H:%M:%S"))
-    if log:
+    m["period"] = period
+    if log and period == "dev":
         OUT.mkdir(parents=True, exist_ok=True)
         lp = OUT / "log.csv"
         pd.DataFrame([m]).to_csv(lp, mode="a", header=not lp.exists(), index=False)
