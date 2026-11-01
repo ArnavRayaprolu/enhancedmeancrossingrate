@@ -140,6 +140,15 @@ DATASETS = {
                           "holdout", top_k=CRYPTO_TOP_K),
 }
 
+# Added after the freeze (data only, no parameter changes): Binance USDT-M
+# perpetual futures from a public GitHub mirror of data.binance.vision.  The
+# mirror's 39 symbols were chosen by its owner, so this sample is NOT free of
+# survivorship / selection bias; it is reported as supplementary evidence.
+DATASETS["perp_1h"] = Dataset("perp_1h", "binance_perp_1h", None, 24 * 365, 5.0, 0.10,
+                              "all", "holdout", top_k=CRYPTO_TOP_K)
+DATASETS["perp_4h"] = Dataset("perp_4h", "binance_perp_1h", "4h", 6 * 365, 5.0, 0.10,
+                              "all", "holdout", top_k=CRYPTO_TOP_K)
+
 # Cost sensitivity grid, one-way bps per leg.
 COST_GRID_BPS = (0.0, 1.0, 2.5, 5.0, 10.0, 15.0, 25.0)
 
