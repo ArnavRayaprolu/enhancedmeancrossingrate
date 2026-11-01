@@ -51,7 +51,7 @@ def light_report(res: dict, out: Path) -> None:
 
 
 def main(names: list[str], reps: int = 2000, complete_case: bool = False,
-         delayed: bool = False) -> None:
+         delayed: bool = False, lean: bool = False) -> None:
     """complete_case: robustness run in which a coin must be observed on EVERY
     formation bar (no forward filling in formation); detailed configs only."""
     CACHE.mkdir(parents=True, exist_ok=True)
@@ -59,7 +59,7 @@ def main(names: list[str], reps: int = 2000, complete_case: bool = False,
         t0 = time.time()
         tag = name + ("_cc" if complete_case else "") + ("_lag1" if delayed else "")
         print(f"=== {tag}", flush=True)
-        cfgs = [C.DELAYED] if delayed else (C.detailed() if complete_case else None)
+        cfgs = [C.DELAYED] if delayed else (C.detailed() if (complete_case or lean) else None)
         res = backtest.run(name, configs=cfgs, ic=not (complete_case or delayed),
                            complete_case=complete_case, detail_extra=cfgs if delayed else None)
         if len(res["folds"]) == 0:
@@ -80,5 +80,6 @@ if __name__ == "__main__":
     args = sys.argv[1:] or ["all"]
     cc = "--complete-case" in args
     dl = "--delayed" in args
-    args = [a for a in args if a not in ("--complete-case", "--delayed")] or ["all"]
-    main(available() if args == ["all"] else args, complete_case=cc, delayed=dl)
+    ln = "--lean" in args          # headline configurations only (memory-lean, long series)
+    args = [a for a in args if a not in ("--complete-case", "--delayed", "--lean")] or ["all"]
+    main(available() if args == ["all"] else args, complete_case=cc, delayed=dl, lean=ln)
