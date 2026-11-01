@@ -1,0 +1,40 @@
+{
+ "dataset": "sp500_1h_all",
+ "calib": 8,
+ "min_calib": 3,
+ "reopt": 3,
+ "trials": 30,
+ "top_k": 100,
+ "cost_bps": 5.0,
+ "funding": false,
+ "weighting": "active",
+ "borrow_pa": 0.005,
+ "space": {
+  "mean": [
+   "FIX",
+   12,
+   24,
+   48,
+   96,
+   168,
+   336
+  ],
+  "delta": [
+   0.005,
+   0.0075,
+   0.01,
+   0.015,
+   0.02,
+   0.03,
+   0.04,
+   0.06
+  ],
+  "n_pairs": [
+   3,
+   5,
+   8,
+   10
+  ]
+ },
+ "seconds": 250.32732129096985
+}
