@@ -184,6 +184,15 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
         # cycle, gain ~ 1/2 * entry * relative sd of the ratio, minus round-trip cost
         g = 0.5 * sp.entry * zc["sd_rel"] - 2 * kappa
         s = rk(_ccr(f, sp) * g)
+    elif c == "MCR2":
+        # two-horizon mean-crossing rate: crossings of the ratio through its fast
+        # moving mean (tempo) and through its long-run formation mean (equilibrium)
+        st = _zcache(f, "STATIC", 0)
+        s = 0.5 * rk(zc["mcr"]) + 0.5 * rk(st["mcr"])
+    elif c == "MCRstatic":
+        s = rk(_zcache(f, "STATIC", 0)["mcr"])
+    elif c == "MCR+HalfLife":
+        s = 0.5 * rk(zc["mcr"]) + 0.5 * rk(zc["halflife"], False)
     elif c == "MCRxAmp":
         s = rk(zc["mcr"] * zc["sd_rel"])
     else:
