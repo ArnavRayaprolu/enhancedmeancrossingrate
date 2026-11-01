@@ -1,0 +1,456 @@
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/signals.py:42: RuntimeWarning: invalid value encountered in divide
+  return (xa * xb).sum(axis=0) / (xb * xb).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:30: RuntimeWarning: invalid value encountered in divide
+  g = (s22 * s1y - s12 * s2y) / det
+/home/user/enhancedmeancrossingrate/emcr/criteria.py:31: RuntimeWarning: invalid value encountered in divide
+  phi = (s11 * s2y - s12 * s1y) / det
+/home/user/enhancedmeancrossingrate/emcr/explore.py:78: RuntimeWarning: invalid value encountered in divide
+  lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:137: RuntimeWarning: Mean of empty slice
+  sd_rel=np.nanmean(sd_rel[tr], axis=0))
+/home/user/enhancedmeancrossingrate/emcr/signals.py:121: RuntimeWarning: invalid value encountered in divide
+  b = (xm * ym).sum(axis=0) / (xm * xm).sum(axis=0)
+/home/user/enhancedmeancrossingrate/emcr/explore.py:137: RuntimeWarning: Mean of empty slice
+  sd_rel=np.nanmean(sd_rel[tr], axis=0))
+/home/user/enhancedmeancrossingrate/emcr/explore.py:137: RuntimeWarning: Mean of empty slice
+  sd_rel=np.nanmean(sd_rel[tr], axis=0))
+/home/user/enhancedmeancrossingrate/emcr/explore.py:137: RuntimeWarning: Mean of empty slice
+  sd_rel=np.nanmean(sd_rel[tr], axis=0))
+/home/user/enhancedmeancrossingrate/emcr/explore.py:137: RuntimeWarning: Mean of empty slice
+  sd_rel=np.nanmean(sd_rel[tr], axis=0))
+      venue     criterion costs  cost_bps  sharpe  sharpe_daily  total_return  ann_return  max_dd  gross_pa  turnover_pa  n_bars      first       last
+ binance_1h      HalfLife  6bps       6.0   1.168         1.225         0.439       0.140  -0.220     0.238      148.921   23940 2024-01-05 2026-09-28
+ binance_1h Cointegration  6bps       6.0   1.129         1.206         0.434       0.139  -0.113     0.238      150.587   23940 2024-01-05 2026-09-28
+ binance_1h   Correlation  6bps       6.0   0.656         0.769         0.137       0.050  -0.119     0.148      149.199   23940 2024-01-05 2026-09-28
+ binance_1h      Distance  6bps       6.0   0.254         0.254         0.053       0.023  -0.105     0.116      141.071   23940 2024-01-05 2026-09-28
+ binance_1h           MCR  6bps       6.0  -0.999        -1.230        -0.360      -0.152  -0.380    -0.054      148.337   23940 2024-01-05 2026-09-28
+ binance_1h      HalfLife   own      11.0   0.549         0.578         0.174       0.066  -0.229     0.238      148.921   23940 2024-01-05 2026-09-28
+ binance_1h Cointegration   own      11.0   0.519         0.558         0.167       0.064  -0.151     0.238      150.587   23940 2024-01-05 2026-09-28
+ binance_1h   Correlation   own      11.0  -0.322        -0.382        -0.072      -0.025  -0.161     0.148      149.199   23940 2024-01-05 2026-09-28
+ binance_1h      Distance   own      11.0  -0.521        -0.525        -0.131      -0.047  -0.160     0.116      141.071   23940 2024-01-05 2026-09-28
+ binance_1h           MCR   own      11.0  -1.487        -1.836        -0.477      -0.226  -0.491    -0.054      148.337   23940 2024-01-05 2026-09-28
+bitstamp_1h Cointegration  6bps       6.0   7.928         8.007        52.174       1.433  -0.065     1.544      171.718   24570 2024-01-05 2026-10-25
+bitstamp_1h      HalfLife  6bps       6.0   7.834         7.430        46.650       1.393  -0.068     1.504      171.426   24570 2024-01-05 2026-10-25
+bitstamp_1h           MCR  6bps       6.0   4.725         5.109         4.940       0.645  -0.104     0.732      135.020   24570 2024-01-05 2026-10-25
+bitstamp_1h      Distance  6bps       6.0   4.408         4.023         5.731       0.692  -0.071     0.790      149.936   24570 2024-01-05 2026-10-25
+bitstamp_1h   Correlation  6bps       6.0  -1.049        -0.999        -0.233      -0.091  -0.293     0.001      138.666   24570 2024-01-05 2026-10-25
+bitstamp_1h Cointegration   own      11.0   7.466         7.599        40.801       1.347  -0.066     1.544      171.718   24570 2024-01-05 2026-10-25
+bitstamp_1h      HalfLife   own      11.0   7.366         7.042        36.475       1.308  -0.069     1.504      171.426   24570 2024-01-05 2026-10-25
+bitstamp_1h           MCR   own      11.0   4.238         4.611         3.916       0.577  -0.105     0.732      135.020   24570 2024-01-05 2026-10-25
+bitstamp_1h      Distance   own      11.0   3.933         3.611         4.455       0.617  -0.077     0.790      149.936   24570 2024-01-05 2026-10-25
+bitstamp_1h   Correlation   own      11.0  -1.848        -1.764        -0.369      -0.160  -0.389     0.001      138.666   24570 2024-01-05 2026-10-25
+coinbase_1h Cointegration  6bps       6.0   2.546         3.059         1.848       0.385  -0.126     0.484      153.718   24570 2024-01-05 2026-10-25
+coinbase_1h      HalfLife  6bps       6.0   2.145         2.596         1.511       0.341  -0.150     0.443      156.875   24570 2024-01-05 2026-10-25
+coinbase_1h           MCR  6bps       6.0   2.084         2.631         1.617       0.358  -0.127     0.454      148.909   24570 2024-01-05 2026-10-25
+coinbase_1h      Distance  6bps       6.0   0.534         0.535         0.153       0.056  -0.253     0.147      138.704   24570 2024-01-05 2026-10-25
+coinbase_1h   Correlation  6bps       6.0   0.331         0.312         0.065       0.025  -0.180     0.114      136.734   24570 2024-01-05 2026-10-25
+coinbase_1h Cointegration   own      11.0   2.038         2.460         1.296       0.308  -0.134     0.484      153.718   24570 2024-01-05 2026-10-25
+coinbase_1h      HalfLife   own      11.0   1.652         2.010         1.015       0.263  -0.159     0.443      156.875   24570 2024-01-05 2026-10-25
+coinbase_1h           MCR   own      11.0   1.650         2.091         1.124       0.283  -0.142     0.454      148.909   24570 2024-01-05 2026-10-25
+coinbase_1h      Distance   own      11.0  -0.123        -0.124        -0.051      -0.013  -0.283     0.147      138.704   24570 2024-01-05 2026-10-25
+coinbase_1h   Correlation   own      11.0  -0.566        -0.538        -0.121      -0.043  -0.233     0.114      136.734   24570 2024-01-05 2026-10-25
+     okx_1h Cointegration  6bps       6.0   0.051         0.051        -0.008       0.007  -0.167     0.105      148.641   24255 2024-01-12 2026-10-19
+     okx_1h           MCR  6bps       6.0  -0.177        -0.183        -0.085      -0.023  -0.161     0.074      148.375   24255 2024-01-12 2026-10-19
+     okx_1h      Distance  6bps       6.0  -0.396        -0.368        -0.108      -0.037  -0.156     0.059      145.596   24255 2024-01-12 2026-10-19
+     okx_1h      HalfLife  6bps       6.0  -0.425        -0.385        -0.174      -0.059  -0.312     0.040      150.975   24255 2024-01-12 2026-10-19
+     okx_1h   Correlation  6bps       6.0  -1.329        -1.325        -0.253      -0.103  -0.278    -0.011      138.353   24255 2024-01-12 2026-10-19
+     okx_1h Cointegration   own      11.0  -0.473        -0.470        -0.192      -0.067  -0.255     0.105      148.641   24255 2024-01-12 2026-10-19
+     okx_1h           MCR   own      11.0  -0.738        -0.767        -0.255      -0.098  -0.291     0.074      148.375   24255 2024-01-12 2026-10-19
+     okx_1h      HalfLife   own      11.0  -0.967        -0.879        -0.329      -0.135  -0.382     0.040      150.975   24255 2024-01-12 2026-10-19
+     okx_1h      Distance   own      11.0  -1.172        -1.095        -0.271      -0.110  -0.298     0.059      145.596   24255 2024-01-12 2026-10-19
+     okx_1h   Correlation   own      11.0  -2.220        -2.222        -0.383      -0.172  -0.384    -0.011      138.353   24255 2024-01-12 2026-10-19
+    perp_1h Cointegration   own       6.0   1.076         1.189         0.414       0.137  -0.110     0.224      146.106   23625 2024-01-10 2026-09-20
+    perp_1h           MCR   own       6.0  -0.225        -0.237        -0.109      -0.032  -0.223     0.053      143.069   23625 2024-01-10 2026-09-20
+    perp_1h      HalfLife   own       6.0  -0.257        -0.239        -0.122      -0.038  -0.249     0.053      150.988   23625 2024-01-10 2026-09-20
+    perp_1h      Distance   own       6.0  -0.814        -0.854        -0.184      -0.072  -0.234     0.012      139.691   23625 2024-01-10 2026-09-20
+    perp_1h   Correlation   own       6.0  -0.831        -0.843        -0.166      -0.064  -0.234     0.022      143.333   23625 2024-01-10 2026-09-20
+      venue costs   A             B   dm_nw   p_nw  dm_andrews  p_andrews  p_boot   block  diff_pa  holm4
+bitstamp_1h   own MCR      HalfLife -6.8272 0.0000     -6.8057     0.0000  0.0000  9.9623  -0.7307 0.0000
+bitstamp_1h  6bps MCR      HalfLife -6.9383 0.0000     -6.9195     0.0000  0.0000  9.2045  -0.7489 0.0000
+bitstamp_1h   own MCR Cointegration -7.2812 0.0000     -7.1049     0.0000  0.0000 15.5233  -0.7702 0.0000
+bitstamp_1h  6bps MCR Cointegration -7.3907 0.0000     -7.1818     0.0000  0.0000 14.7807  -0.7885 0.0000
+bitstamp_1h   own MCR      Distance -0.3511 0.7255     -0.3490     0.7271  0.7545  2.5878  -0.0398 0.7255
+bitstamp_1h  6bps MCR      Distance -0.4142 0.6787     -0.4126     0.6799  0.6980  2.0488  -0.0473 0.6787
+bitstamp_1h   own MCR   Correlation  9.2040 0.0000      9.2163     0.0000  0.0000 10.1317   0.7372 0.0000
+bitstamp_1h  6bps MCR   Correlation  9.1177 0.0000      9.1303     0.0000  0.0000  9.4152   0.7354 0.0000
+    perp_1h   own MCR      HalfLife  0.0438 0.9651      0.0416     0.9668  0.9700  3.4111   0.0052 1.0000
+    perp_1h   own MCR Cointegration -1.5687 0.1167     -1.5049     0.1324  0.1120 26.4587  -0.1690 0.4669
+    perp_1h   own MCR      Distance  0.4367 0.6623      0.4233     0.6721  0.6720  3.6503   0.0392 1.0000
+    perp_1h   own MCR   Correlation  0.3474 0.7283      0.3383     0.7351  0.7480 14.0177   0.0320 1.0000
+ binance_1h   own MCR      HalfLife -3.1464 0.0017     -3.0126     0.0026  0.0015 30.4865  -0.2917 0.0066
+ binance_1h  6bps MCR      HalfLife -3.1369 0.0017     -3.0072     0.0026  0.0015 29.9782  -0.2920 0.0068
+ binance_1h   own MCR Cointegration -2.9077 0.0036     -2.7555     0.0059  0.0035 28.6019  -0.2898 0.0109
+ binance_1h  6bps MCR Cointegration -2.9105 0.0036     -2.7040     0.0069  0.0030 28.2297  -0.2909 0.0108
+ binance_1h   own MCR      Distance -2.0131 0.0441     -1.8399     0.0658  0.0365 30.3738  -0.1783 0.0441
+ binance_1h  6bps MCR      Distance -1.9647 0.0495     -1.8444     0.0651  0.0445 29.8629  -0.1746 0.0495
+ binance_1h   own MCR   Correlation -2.3200 0.0203     -2.2612     0.0238  0.0230 27.7635  -0.2011 0.0407
+ binance_1h  6bps MCR   Correlation -2.3145 0.0206     -2.2586     0.0239  0.0245 26.9787  -0.2015 0.0413
+coinbase_1h   own MCR      HalfLife  0.2072 0.8359      0.2065     0.8364  0.8495 17.6754   0.0208 1.0000
+coinbase_1h  6bps MCR      HalfLife  0.1669 0.8675      0.1664     0.8679  0.8700 17.1557   0.0169 1.0000
+coinbase_1h   own MCR Cointegration -0.2365 0.8130     -0.2344     0.8147  0.8140 23.6862  -0.0243 1.0000
+coinbase_1h  6bps MCR Cointegration -0.2589 0.7957     -0.2566     0.7975  0.8025 23.1905  -0.0267 1.0000
+coinbase_1h   own MCR      Distance  2.9763 0.0029      2.9486     0.0032  0.0045 23.0328   0.2964 0.0088
+coinbase_1h  6bps MCR      Distance  3.0172 0.0026      2.9898     0.0028  0.0025 22.6575   0.3015 0.0077
+coinbase_1h   own MCR   Correlation  3.6031 0.0003      3.5642     0.0004  0.0010 13.7552   0.3265 0.0013
+coinbase_1h  6bps MCR   Correlation  3.6576 0.0003      3.6183     0.0003  0.0010 13.8691   0.3326 0.0010
+     okx_1h   own MCR      HalfLife  0.3796 0.7043      0.3827     0.7020  0.7020  3.9605   0.0371 1.0000
+     okx_1h  6bps MCR      HalfLife  0.3647 0.7153      0.3681     0.7128  0.7090  3.6278   0.0358 1.0000
+     okx_1h   own MCR Cointegration -0.2856 0.7752     -0.2909     0.7711  0.7635  3.8011  -0.0305 1.0000
+     okx_1h  6bps MCR Cointegration -0.2857 0.7751     -0.2912     0.7709  0.7725  3.4624  -0.0306 1.0000
+     okx_1h   own MCR      Distance  0.1337 0.8937      0.1363     0.8916  0.8900  2.9706   0.0123 1.0000
+     okx_1h  6bps MCR      Distance  0.1482 0.8822      0.1517     0.8794  0.8770  2.5365   0.0137 1.0000
+     okx_1h   own MCR   Correlation  0.8323 0.4053      0.8439     0.3987  0.4070  1.0000   0.0742 1.0000
+     okx_1h  6bps MCR   Correlation  0.8852 0.3760      0.9000     0.3681  0.3715  1.0000   0.0792 1.0000
+year                             2024  2025  2026
+venue       criterion     costs                  
+binance_1h  Cointegration 6bps   0.74  1.85  0.78
+                          own    0.09  1.22  0.25
+            Correlation   6bps   0.89  2.06 -1.47
+                          own    0.05  1.02 -2.64
+            Distance      6bps   0.56 -0.19  0.23
+                          own   -0.08 -1.09 -0.80
+            HalfLife      6bps   0.64  1.79  1.09
+                          own    0.02  1.20  0.43
+            MCR           6bps  -0.73 -1.04 -1.38
+                          own   -1.25 -1.46 -1.93
+bitstamp_1h Cointegration 6bps   9.74  8.96  4.15
+                          own    9.34  8.42  3.61
+            Correlation   6bps  -0.81 -0.33 -2.55
+                          own   -1.49 -1.12 -3.65
+            Distance      6bps   5.28  6.66  0.93
+                          own    4.89  6.02  0.38
+            HalfLife      6bps   9.92  9.07  2.99
+                          own    9.52  8.56  2.40
+            MCR           6bps   5.38  6.74  1.37
+                          own    4.96  6.23  0.75
+coinbase_1h Cointegration 6bps   3.01  2.64  1.95
+                          own    2.51  2.08  1.47
+            Correlation   6bps   1.24  1.74 -2.77
+                          own    0.20  1.00 -3.75
+            Distance      6bps   1.81  2.41 -2.34
+                          own    1.22  1.51 -2.90
+            HalfLife      6bps   2.46  2.88  0.98
+                          own    1.97  2.36  0.52
+            MCR           6bps   1.49  2.69  2.33
+                          own    1.08  2.24  1.85
+okx_1h      Cointegration 6bps  -0.68  0.25  0.75
+                          own   -1.23 -0.23  0.20
+            Correlation   6bps  -0.48 -0.37 -4.13
+                          own   -1.33 -1.18 -5.21
+            Distance      6bps  -0.55  0.74 -1.42
+                          own   -1.18 -0.17 -2.32
+            HalfLife      6bps  -0.40 -1.29  0.93
+                          own   -0.99 -1.77  0.35
+            MCR           6bps  -0.48  0.22 -0.27
+                          own   -1.04 -0.29 -0.91
+perp_1h     Cointegration own    0.75  1.64  0.82
+            Correlation   own    0.29 -1.53 -1.52
+            Distance      own   -0.46 -0.49 -1.84
+            HalfLife      own   -0.48  0.46 -0.66
+            MCR           own   -1.33  0.87 -0.02
+      venue     criterion costs  sharpe_lo  sharpe_hi  ret_lo  ret_hi  block
+bitstamp_1h           MCR   own       3.23       5.97    2.17    6.39   1.08
+bitstamp_1h           MCR  6bps       3.73       6.49    2.87    7.98   1.19
+bitstamp_1h      HalfLife   own       5.73       9.29   15.31   94.49  10.79
+bitstamp_1h      HalfLife  6bps       6.06       9.80   19.95  119.01  10.72
+bitstamp_1h Cointegration   own       6.18       9.51   17.51  101.33  15.76
+bitstamp_1h Cointegration  6bps       6.53      10.00   22.32  128.74  15.72
+bitstamp_1h      Distance   own       2.81       4.93    1.98   10.11   6.49
+bitstamp_1h      Distance  6bps       3.21       5.50    2.63   12.70   6.49
+bitstamp_1h   Correlation   own      -2.81      -0.67   -0.55   -0.15   1.00
+bitstamp_1h   Correlation  6bps      -2.04       0.19   -0.45    0.03   1.00
+    perp_1h           MCR   own      -1.39       0.89   -0.43    0.36   1.03
+    perp_1h      HalfLife   own      -0.97       0.61   -0.37    0.23  10.15
+    perp_1h Cointegration   own       0.11       2.42    0.01    1.04   2.92
+    perp_1h      Distance   own      -1.96       0.34   -0.40    0.07   1.61
+    perp_1h   Correlation   own      -1.83       0.39   -0.36    0.06   2.06
+ binance_1h           MCR   own      -2.81      -0.80   -0.66   -0.23   1.97
+ binance_1h           MCR  6bps      -2.29      -0.08   -0.59   -0.04   1.84
+ binance_1h      HalfLife   own      -0.61       1.84   -0.21    0.66   2.95
+ binance_1h      HalfLife  6bps      -0.02       2.58   -0.03    1.05   3.03
+ binance_1h Cointegration   own      -0.57       1.65   -0.18    0.64   6.13
+ binance_1h Cointegration  6bps       0.06       2.32    0.00    1.00   6.01
+ binance_1h      Distance   own      -1.56       0.45   -0.33    0.10   4.27
+ binance_1h      Distance  6bps      -0.71       1.30   -0.17    0.34   6.60
+ binance_1h   Correlation   own      -1.48       0.75   -0.24    0.13   1.81
+ binance_1h   Correlation  6bps      -0.39       1.99   -0.08    0.39   2.03
+coinbase_1h           MCR   own       0.86       3.40    0.36    2.37   1.20
+coinbase_1h           MCR  6bps       1.39       3.95    0.70    3.13   1.14
+coinbase_1h      HalfLife   own       0.78       3.32    0.31    2.16   1.00
+coinbase_1h      HalfLife  6bps       1.33       3.92    0.63    2.95   1.00
+coinbase_1h Cointegration   own       1.18       3.96    0.51    2.48   1.76
+coinbase_1h Cointegration  6bps       1.71       4.56    0.85    3.36   1.70
+coinbase_1h      Distance   own      -1.19       1.08   -0.33    0.31   1.00
+coinbase_1h      Distance  6bps      -0.57       1.83   -0.20    0.60   1.00
+coinbase_1h   Correlation   own      -2.02       0.56   -0.32    0.16   2.25
+coinbase_1h   Correlation  6bps      -1.03       1.30   -0.18    0.40   2.10
+     okx_1h           MCR   own      -1.86       0.45   -0.51    0.13   1.00
+     okx_1h           MCR  6bps      -1.31       1.09   -0.40    0.39   1.00
+     okx_1h      HalfLife   own      -1.82       0.27   -0.60    0.08   2.09
+     okx_1h      HalfLife  6bps      -1.35       0.80   -0.51    0.32   2.24
+     okx_1h Cointegration   own      -1.60       0.74   -0.50    0.28   1.00
+     okx_1h Cointegration  6bps      -1.09       1.29   -0.39    0.58   1.00
+     okx_1h      Distance   own      -2.01      -0.01   -0.47   -0.01   4.09
+     okx_1h      Distance  6bps      -1.36       0.88   -0.36    0.22   4.19
+     okx_1h   Correlation   own      -3.15      -1.24   -0.53   -0.21   2.50
+     okx_1h   Correlation  6bps      -2.33      -0.26   -0.43   -0.05   5.19
+      venue     sr   sr0   dsr   psr   N    T
+    perp_1h -0.012 0.161 0.000 0.348 371  985
+ binance_1h -0.096 0.161 0.000 0.000 371  998
+bitstamp_1h  0.241 0.161 0.988 1.000 371 1025
+coinbase_1h  0.109 0.161 0.059 1.000 371 1025
+     okx_1h -0.040 0.161 0.000 0.092 371 1012
