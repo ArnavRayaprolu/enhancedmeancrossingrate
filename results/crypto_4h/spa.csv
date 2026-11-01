@@ -1,0 +1,5 @@
+scope,benchmark,spa_p,rc_p,spa_lower_p,K,T,block
+all,"own classical component (EMCR: cointegration), same config",0.281,0.281,0.262,140,2258,1.5543291821149152
+LEVEL,"own classical component (EMCR: cointegration), same config",0.1685,0.1685,0.143,110,2258,1.5543291821149152
+MAD,"own classical component (EMCR: cointegration), same config",0.272,0.272,0.257,20,2258,2.0076048250078173
+HEDGED,"own classical component (EMCR: cointegration), same config",0.6845,0.6845,0.5945,10,2258,2.2111153483044075
