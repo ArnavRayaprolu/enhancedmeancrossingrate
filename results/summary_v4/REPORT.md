@@ -8,6 +8,8 @@ All numbers are out of sample (non-overlapping walk-forward windows of 630 forma
 
 | dataset | folds | first | last | names | pairs | ranked |
 |---|---|---|---|---|---|---|
+| crypto_5m | 581 | 2025-01-03 | 2026-09-30 | 94 | 4443 | True |
+| crypto_15m | 747 | 2020-01-14 | 2026-09-30 | 90 | 4245 | True |
 | crypto_30m | 372 | 2020-01-20 | 2026-09-26 | 89 | 4219 | True |
 | crypto_1h | 184 | 2020-02-09 | 2026-09-20 | 90 | 4256 | True |
 | crypto_4h | 43 | 2020-06-06 | 2026-08-11 | 89 | 4205 | True |
@@ -32,6 +34,8 @@ Datasets with fewer than 5 windows are shown but excluded from rankings and test
 
 | dataset | Distance | Correlation | Cointegration | HalfLife | EMCR | EMCR+Distance | EMCR+Correlation | EMCR+Cointegration | EMCR+HalfLife | EMCR+Coint+HalfLife | EMCR+All | EMCR|Coint | EMCR-implied | EMCR-implied+Cointegration |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| crypto_5m | -4.68 | -6.66 | -4.44 | -4.53 | -5.26 | -5.37 | -7.04 | -4.58 | -3.28 | -4.67 | -5.34 | -4.84 | -5.01 | -4.27 |
+| crypto_15m | -0.63 | -0.24 | -0.98 | -0.08 | -0.48 | -0.42 | -0.58 | -0.27 | -0.55 | -0.39 | -0.07 | -0.20 | -0.64 | -0.34 |
 | crypto_30m | -0.17 | 0.18 | -0.36 | 0.24 | -0.33 | 0.27 | 0.16 | 0.45 | 0.06 | 0.40 | 0.62 | 0.16 | -0.46 | 0.24 |
 | crypto_1h | 0.17 | 0.24 | 0.24 | 0.44 | -0.11 | -0.03 | 0.28 | -0.51 | 0.17 | -0.24 | 0.52 | 0.01 | 0.14 | -0.03 |
 | crypto_4h | -0.31 | -0.35 | -0.48 | -0.13 | -0.30 | -0.17 | 0.08 | 0.50 | 0.24 | 0.74 | 0.13 | 0.39 | -0.38 | -0.07 |
@@ -56,45 +60,46 @@ Datasets with fewer than 5 windows are shown but excluded from rankings and test
 
 | criterion | mean_sharpe | median_sharpe | share_positive | mean_rank | times_best |
 |---|---|---|---|---|---|
-| EMCR-implied+Cointegration | 0.25 | 0.28 | 0.62 | 5.77 | 2 |
-| Correlation | 0.42 | 0.24 | 0.85 | 5.92 | 3 |
-| HalfLife | 0.33 | 0.16 | 0.69 | 6.31 | 1 |
-| EMCR+Correlation | 0.12 | 0.28 | 0.69 | 6.69 | 1 |
-| EMCR+HalfLife | 0.21 | 0.24 | 0.77 | 6.85 | 0 |
-| EMCR+All | -0.11 | 0.06 | 0.62 | 7.38 | 3 |
-| EMCR | 0.30 | 0.24 | 0.69 | 7.46 | 0 |
-| EMCR+Coint+HalfLife | 0.08 | 0.19 | 0.62 | 7.54 | 2 |
-| Distance | -0.12 | 0.20 | 0.62 | 7.69 | 0 |
-| EMCR+Distance | -0.14 | -0.03 | 0.46 | 7.85 | 1 |
-| Cointegration | 0.06 | 0.15 | 0.54 | 8.46 | 0 |
-| EMCR+Cointegration | -0.13 | 0.15 | 0.54 | 8.62 | 0 |
-| EMCR|Coint | 0.10 | 0.16 | 0.77 | 9.08 | 0 |
-| EMCR-implied | -0.31 | 0.10 | 0.54 | 9.38 | 0 |
+| EMCR-implied+Cointegration | -0.09 | 0.24 | 0.53 | 5.53 | 2 |
+| HalfLife | -0.02 | 0.16 | 0.60 | 5.87 | 1 |
+| Correlation | -0.09 | 0.19 | 0.73 | 6.27 | 3 |
+| EMCR+HalfLife | -0.07 | 0.21 | 0.67 | 6.67 | 1 |
+| EMCR+All | -0.46 | 0.05 | 0.53 | 7.20 | 4 |
+| EMCR+Coint+HalfLife | -0.27 | 0.00 | 0.53 | 7.40 | 2 |
+| EMCR+Correlation | -0.40 | 0.16 | 0.60 | 7.47 | 1 |
+| EMCR | -0.12 | 0.24 | 0.60 | 7.73 | 0 |
+| Distance | -0.46 | 0.17 | 0.53 | 7.93 | 0 |
+| EMCR+Distance | -0.51 | -0.08 | 0.40 | 8.13 | 1 |
+| EMCR+Cointegration | -0.44 | -0.03 | 0.47 | 8.13 | 0 |
+| Cointegration | -0.31 | -0.14 | 0.47 | 8.47 | 0 |
+| EMCR|Coint | -0.25 | 0.12 | 0.67 | 8.60 | 0 |
+| EMCR-implied | -0.64 | -0.14 | 0.47 | 9.60 | 0 |
 
 ## 4. Does adding EMCR improve each classical method?
 
 | hybrid | component | datasets | hybrid_better | median_sharpe_gain | mean_sharpe_gain |
 |---|---|---|---|---|---|
-| EMCR+Distance | Distance | 13 | 7 | 0.02 | -0.02 |
-| EMCR+Correlation | Correlation | 13 | 6 | -0.02 | -0.30 |
-| EMCR+Cointegration | Cointegration | 13 | 5 | -0.04 | -0.19 |
-| EMCR+HalfLife | HalfLife | 13 | 6 | -0.05 | -0.12 |
-| EMCR+Coint+HalfLife | Cointegration | 13 | 8 | 0.01 | 0.02 |
-| EMCR+All | Cointegration | 13 | 8 | 0.03 | -0.17 |
-| EMCR|Coint | Cointegration | 13 | 4 | -0.10 | 0.04 |
-| EMCR-implied | Cointegration | 13 | 5 | -0.09 | -0.37 |
-| EMCR-implied+Cointegration | Cointegration | 13 | 9 | 0.16 | 0.19 |
+| EMCR+Distance | Distance | 15 | 8 | 0.02 | -0.05 |
+| EMCR+Correlation | Correlation | 15 | 6 | -0.03 | -0.31 |
+| EMCR+Cointegration | Cointegration | 15 | 6 | -0.04 | -0.13 |
+| EMCR+HalfLife | HalfLife | 15 | 7 | -0.05 | -0.05 |
+| EMCR+Coint+HalfLife | Cointegration | 15 | 9 | 0.01 | 0.04 |
+| EMCR+All | Cointegration | 15 | 9 | 0.03 | -0.15 |
+| EMCR|Coint | Cointegration | 15 | 5 | -0.10 | 0.06 |
+| EMCR-implied | Cointegration | 15 | 6 | -0.09 | -0.33 |
+| EMCR-implied+Cointegration | Cointegration | 15 | 11 | 0.17 | 0.22 |
 
 ## 5. Pre-registered Diebold-Mariano tests (primary configuration)
 
 d_t = n^A_t - n^B_t (net return of A minus B per bar); H0: E[d] = 0, two-sided; Newey-West HAC with Bartlett kernel, bandwidth floor(4(T/100)^(2/9)) (also 2x and Andrews 1991 shown), Harvey-Leybourne-Newbold correction, t(T-1) reference; stationary-bootstrap p-value with Politis-White block length; Holm within dataset and across all datasets.
 
-Tests: 169; significant at 5% after Holm across all: 0.
+Tests: 195; significant at 5% after Holm across all: 0.
 
 | dataset | A | B | dm_nw | p_nw | p_nw2 | p_andrews | p_boot | lag_nw | mean_diff_pa | holm_within | holm_all |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| etf_1h | EMCR+Cointegration | Cointegration | -3.2471 | 0.0012 | 0.0016 | 0.0012 | 0.0020 | 9 | -0.0321 | 0.0153 | 0.1985 |
-| crypto_4h | EMCR+Coint+HalfLife | Cointegration | 3.1926 | 0.0014 | 0.0015 | 0.0010 | 0.0015 | 11 | 0.1269 | 0.0184 | 0.2374 |
+| etf_1h | EMCR+Cointegration | Cointegration | -3.2471 | 0.0012 | 0.0016 | 0.0012 | 0.0020 | 9 | -0.0321 | 0.0153 | 0.2290 |
+| crypto_4h | EMCR+Coint+HalfLife | Cointegration | 3.1926 | 0.0014 | 0.0015 | 0.0010 | 0.0015 | 11 | 0.1269 | 0.0184 | 0.2742 |
+| crypto_15m | EMCR+All | Cointegration | 2.8228 | 0.0048 | 0.0046 | 0.0054 | 0.0050 | 22 | 0.1229 | 0.0619 | 0.9188 |
 | etf_1d | EMCR+Correlation | Correlation | 2.6754 | 0.0075 | 0.0058 | 0.0123 | 0.0160 | 9 | 0.0072 | 0.0974 | 1.0000 |
 | crypto_30m | EMCR+All | Cointegration | 2.6390 | 0.0083 | 0.0080 | 0.0085 | 0.0065 | 19 | 0.1108 | 0.1081 | 1.0000 |
 | crypto_4h | EMCR+Cointegration | Cointegration | 2.6327 | 0.0085 | 0.0092 | 0.0077 | 0.0095 | 11 | 0.1061 | 0.1018 | 1.0000 |
@@ -103,26 +108,27 @@ Tests: 169; significant at 5% after Holm across all: 0.
 | etf_1h | EMCR|Coint | Cointegration | -2.5481 | 0.0109 | 0.0133 | 0.0109 | 0.0135 | 9 | -0.0247 | 0.1195 | 1.0000 |
 | etf_1h | EMCR-implied+Cointegration | Cointegration | -2.4000 | 0.0164 | 0.0156 | 0.0240 | 0.0235 | 9 | -0.0240 | 0.1643 | 1.0000 |
 | crypto_30m | EMCR+Coint+HalfLife | Cointegration | 2.3975 | 0.0165 | 0.0164 | 0.0168 | 0.0150 | 19 | 0.0946 | 0.1816 | 1.0000 |
+| crypto_15m | EMCR+Cointegration | Cointegration | 2.3305 | 0.0198 | 0.0186 | 0.0211 | 0.0210 | 22 | 0.0966 | 0.2374 | 1.0000 |
 | crypto_spot_1d | EMCR+Coint+HalfLife | Cointegration | 2.3112 | 0.0209 | 0.0194 | 0.0215 | 0.0215 | 7 | 0.0727 | 0.2719 | 1.0000 |
+| crypto_15m | EMCR|Coint | Cointegration | 2.2993 | 0.0215 | 0.0210 | 0.0222 | 0.0195 | 22 | 0.1038 | 0.2374 | 1.0000 |
 | etf_1h | EMCR+All | Cointegration | -2.2537 | 0.0243 | 0.0223 | 0.0311 | 0.0305 | 9 | -0.0259 | 0.2184 | 1.0000 |
 | crypto_1h | EMCR+Cointegration | Cointegration | -2.2279 | 0.0259 | 0.0231 | 0.0324 | 0.0260 | 16 | -0.0863 | 0.3366 | 1.0000 |
 | crypto_4h | EMCR|Coint | Cointegration | 2.2133 | 0.0269 | 0.0276 | 0.0249 | 0.0260 | 11 | 0.0953 | 0.2958 | 1.0000 |
 | etf_1h | EMCR-implied | Cointegration | -2.1821 | 0.0292 | 0.0246 | 0.0351 | 0.0295 | 9 | -0.0259 | 0.2333 | 1.0000 |
+| crypto_15m | EMCR-implied+Cointegration | Cointegration | 2.1758 | 0.0296 | 0.0286 | 0.0319 | 0.0315 | 22 | 0.0865 | 0.2957 | 1.0000 |
+| crypto_15m | EMCR+Coint+HalfLife | Cointegration | 2.0121 | 0.0442 | 0.0416 | 0.0484 | 0.0485 | 22 | 0.0828 | 0.3979 | 1.0000 |
+| crypto_5m | EMCR | Correlation | -1.9539 | 0.0507 | 0.0514 | 0.0512 | 0.0530 | 21 | -0.1906 | 0.6593 | 1.0000 |
 | crypto_30m | EMCR-implied+Cointegration | Cointegration | 1.8658 | 0.0621 | 0.0638 | 0.0607 | 0.0600 | 19 | 0.0752 | 0.6207 | 1.0000 |
 | nifty50_1h | EMCR-implied+Cointegration | Cointegration | 1.8030 | 0.0715 | 0.0624 | 0.0803 | 0.0780 | 9 | 0.0264 | 0.9290 | 1.0000 |
+| crypto_15m | EMCR+HalfLife | HalfLife | -1.7517 | 0.0798 | 0.0805 | 0.0807 | 0.0870 | 22 | -0.0577 | 0.6387 | 1.0000 |
 | sp500_1h | EMCR-implied+Cointegration | Cointegration | 1.7318 | 0.0834 | 0.0816 | 0.0895 | 0.0930 | 9 | 0.0396 | 1.0000 | 1.0000 |
-| etf_1h | EMCR | Cointegration | -1.7184 | 0.0858 | 0.0942 | 0.0841 | 0.0840 | 9 | -0.0218 | 0.6006 | 1.0000 |
-| etf_5m | EMCR+Correlation | Correlation | -1.6428 | 0.1005 | 0.0868 | 0.1120 | 0.1095 | 8 | -0.0412 | 1.0000 | 1.0000 |
-| nifty50_5m | EMCR+Cointegration | Cointegration | -1.6423 | 0.1006 | 0.1028 | 0.1036 | 0.0870 | 8 | -0.0778 | 1.0000 | 1.0000 |
-| crypto_30m | EMCR | HalfLife | -1.6076 | 0.1079 | 0.1058 | 0.1117 | 0.1055 | 19 | -0.0682 | 0.9714 | 1.0000 |
-| crypto_1h | EMCR | HalfLife | -1.5685 | 0.1168 | 0.1131 | 0.1241 | 0.1115 | 16 | -0.0638 | 1.0000 | 1.0000 |
-| etf_1d | EMCR+Distance | Distance | 1.5405 | 0.1235 | 0.1227 | 0.1531 | 0.1150 | 9 | 0.0045 | 1.0000 | 1.0000 |
-| crypto_30m | EMCR+Distance | Distance | 1.5039 | 0.1326 | 0.1332 | 0.1361 | 0.1385 | 19 | 0.0450 | 1.0000 | 1.0000 |
 
 ## 6. Pair-level evidence: does the formation statistic predict a pair's out-of-sample net return? (t-statistic of the fold-average rank IC)
 
 | dataset | ar1 | ccr | coint_p | corr | distance | halflife | mcr |
 |---|---|---|---|---|---|---|---|
+| crypto_5m | -3.3 | -2.9 | -5.0 | -15.0 | -14.5 | -3.1 | -5.1 |
+| crypto_15m | 5.8 | 3.4 | 4.6 | -7.3 | -2.8 | 4.8 | 3.8 |
 | crypto_30m | 4.1 | 1.7 | 2.9 | -6.1 | -2.2 | 3.4 | 2.6 |
 | crypto_1h | 3.9 | 0.9 | 4.1 | -2.6 | -1.2 | 3.0 | 1.6 |
 | crypto_4h | 4.2 | 3.0 | 2.1 | -1.0 | 0.1 | 2.4 | 2.2 |
@@ -148,6 +154,8 @@ Tests: 169; significant at 5% after Holm across all: 0.
 
 | dataset | K | T | spa_p | rc_p |
 |---|---|---|---|---|
+| crypto_5m | 50 | 636 | 0.565 | 0.565 |
+| crypto_15m | 50 | 2452 | 0.434 | 0.434 |
 | crypto_30m | 50 | 2442 | 0.392 | 0.392 |
 | crypto_1h | 140 | 2416 | 0.900 | 0.908 |
 | crypto_4h | 140 | 2258 | 0.281 | 0.281 |
@@ -170,6 +178,8 @@ Deflated Sharpe ratio (Bailey and Lopez de Prado 2014) of the best proposed conf
 
 | dataset | config | criterion | sr | sr0 | dsr | psr | N |
 |---|---|---|---|---|---|---|---|
+| crypto_5m | LEVEL|w140|e2|x0.5|n20|rank | EMCR+HalfLife | -0.117 | 0.553 | 0.000 | 0.090 | 70 |
+| crypto_15m | LEVEL|w140|e2|x0.5|n20|rank | EMCR+All | -0.003 | 0.183 | 0.000 | 0.436 | 70 |
 | crypto_30m | LEVEL|w140|e2|x0.5|n20|rank | EMCR+All | 0.031 | 0.109 | 0.000 | 0.948 | 70 |
 | crypto_1h | LEVEL|w140|e2|x0.5|n5|rank | EMCR+All | 0.058 | 0.085 | 0.089 | 0.998 | 196 |
 | crypto_4h | LEVEL|w140|e2|x1|n20|rank | EMCR+Coint+HalfLife | 0.057 | 0.058 | 0.473 | 0.997 | 196 |
@@ -228,6 +238,8 @@ Sharpe by method with a one-bar delay:
 
 | dataset | Distance | Correlation | Cointegration | HalfLife | EMCR | EMCR+Distance | EMCR+Correlation | EMCR+Cointegration | EMCR+HalfLife | EMCR+Coint+HalfLife | EMCR+All | EMCR|Coint | EMCR-implied | EMCR-implied+Cointegration |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| crypto_5m | 2.3 | 2.4 | 1.7 | 2.2 | 1.6 | 2.2 | 2.3 | 1.8 | 2.8 | 2.1 | 2.5 | 1.7 | 1.6 | 2.0 |
+| crypto_15m | 5.2 | 5.7 | 4.4 | 5.9 | 5.3 | 5.5 | 5.3 | 5.6 | 5.2 | 5.4 | 5.9 | 5.7 | 5.0 | 5.5 |
 | crypto_30m | 5.6 | 6.4 | 4.9 | 6.7 | 5.0 | 6.7 | 6.4 | 7.3 | 6.2 | 7.1 | 7.5 | 6.4 | 4.7 | 6.7 |
 | crypto_1h | 6.8 | 7.0 | 7.3 | 8.3 | 5.4 | 5.9 | 7.2 | 3.3 | 6.9 | 4.8 | 8.4 | 6.1 | 6.8 | 5.9 |
 | crypto_4h | 1.2 | 1.3 |  | 3.8 | 1.0 | 3.2 | 7.1 | 14.5 | 10.0 | 17.7 | 8.0 | 12.8 |  | 4.9 |
@@ -249,6 +261,8 @@ Sharpe by method with a one-bar delay:
 
 | dataset | Distance | Correlation | Cointegration | HalfLife | EMCR | EMCR+Distance | EMCR+Correlation | EMCR+Cointegration | EMCR+HalfLife | EMCR+Coint+HalfLife | EMCR+All | EMCR|Coint | EMCR-implied | EMCR-implied+Cointegration |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| crypto_5m | 2280 | 2257 | 2276 | 2337 | 2310 | 2307 | 2317 | 2323 | 2346 | 2340 | 2340 | 2331 | 2315 | 2346 |
+| crypto_15m | 811 | 799 | 810 | 826 | 819 | 818 | 817 | 825 | 824 | 826 | 832 | 827 | 822 | 832 |
 | crypto_30m | 412 | 410 | 413 | 420 | 416 | 417 | 420 | 425 | 420 | 424 | 425 | 422 | 421 | 427 |
 | crypto_1h | 214 | 212 | 215 | 218 | 219 | 213 | 218 | 220 | 221 | 220 | 220 | 220 | 219 | 220 |
 | crypto_4h | 61 | 60 | 61 | 63 | 62 | 63 | 62 | 63 | 63 | 63 | 63 | 63 | 64 | 64 |
@@ -271,6 +285,8 @@ Sharpe by method with a one-bar delay:
 
 | dataset | HEDGED|w140|e2|x0.5|n20|rank | LEVEL|w140|e2|x0.5|n20|active | LEVEL|w140|e2|x0.5|n20|rank | MAD|f35w140|e1|x0.25|n20|rank | MAD|f35w140|e1|x0.25|n5|active |
 |---|---|---|---|---|---|
+| crypto_5m | -4.38 | -15.25 | -5.00 | -7.03 | -6.89 |
+| crypto_15m | -0.80 | -3.99 | -0.42 | -2.99 | -2.65 |
 | crypto_30m | -0.19 | -1.77 | 0.10 | -1.71 | -1.43 |
 | crypto_1h | -0.11 | -0.88 | 0.09 | -1.24 | -0.83 |
 | crypto_4h | -0.40 | -0.35 | -0.01 | -0.62 | -0.19 |

@@ -1,4 +1,12 @@
 scope,benchmark,spa_p,rc_p,spa_lower_p,K,T,block,dataset
+all,"own classical component (EMCR: cointegration), same config",0.565,0.565,0.549,50,636,1.1662357757766506,crypto_5m
+LEVEL,"own classical component (EMCR: cointegration), same config",0.2725,0.2725,0.2725,20,636,1.1662357757766506,crypto_5m
+MAD,"own classical component (EMCR: cointegration), same config",0.499,0.499,0.48,20,636,1.1371527178930398,crypto_5m
+HEDGED,"own classical component (EMCR: cointegration), same config",0.386,0.4045,0.3735,10,636,1.725959300849032,crypto_5m
+all,"own classical component (EMCR: cointegration), same config",0.434,0.434,0.284,50,2452,1.3119365819777506,crypto_15m
+LEVEL,"own classical component (EMCR: cointegration), same config",0.0535,0.0535,0.0525,20,2452,1.3119365819777506,crypto_15m
+MAD,"own classical component (EMCR: cointegration), same config",0.7025,0.703,0.5265,20,2452,1.314170479694802,crypto_15m
+HEDGED,"own classical component (EMCR: cointegration), same config",0.0155,0.0155,0.0155,10,2452,1.6059110160309245,crypto_15m
 all,"own classical component (EMCR: cointegration), same config",0.3915,0.3915,0.137,50,2442,1.4085846411191123,crypto_30m
 LEVEL,"own classical component (EMCR: cointegration), same config",0.043,0.043,0.028,20,2442,1.4085846411191123,crypto_30m
 MAD,"own classical component (EMCR: cointegration), same config",0.7755,0.7755,0.433,20,2442,1.693270970392187,crypto_30m
