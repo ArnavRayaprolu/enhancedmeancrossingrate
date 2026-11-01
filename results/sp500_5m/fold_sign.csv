@@ -7,3 +7,6 @@ EMCR,Distance,12,6,1.0
 EMCR,Correlation,12,8,0.3876953125
 EMCR,Cointegration,12,7,0.7744140625
 EMCR,HalfLife,12,7,0.7744140625
+EMCR+Coint+HalfLife,Cointegration,12,6,1.0
+EMCR+All,Cointegration,12,3,0.14599609375
+EMCR|Coint,Cointegration,12,8,0.3876953125
