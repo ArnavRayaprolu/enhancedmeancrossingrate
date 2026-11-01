@@ -177,6 +177,17 @@ def batch_exec15():
     return specs
 
 
+def batch_slow():
+    """Slower equilibria (3-14 day means on hourly bars) with 0 / 1-hour execution delay."""
+    specs = {}
+    for c, w, e, lag in itertools.product(["MCR", "HalfLife", "Cointegration", "Distance"],
+                                          [72, 168, 336], [2.0, 2.5], [0, 1]):
+        specs[f"{c}|w{w}|e{e}|n10|delay{lag}h"] = Spec(
+            criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=10, max_uses=1,
+            top_k=100, weighting="rank", params={"lag": lag} if lag else {})
+    return specs
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 3
