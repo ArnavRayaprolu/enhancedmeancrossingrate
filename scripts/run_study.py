@@ -23,18 +23,24 @@ def available() -> list[str]:
             if d.role != "test" and any((DATA / d.source).glob("close*.parquet"))]
 
 
-def main(names: list[str], reps: int = 2000) -> None:
+def main(names: list[str], reps: int = 2000, complete_case: bool = False) -> None:
+    """complete_case: robustness run in which a coin must be observed on EVERY
+    formation bar (no forward filling in formation); detailed configs only."""
     CACHE.mkdir(parents=True, exist_ok=True)
     for name in names:
         t0 = time.time()
-        print(f"=== {name}", flush=True)
-        res = backtest.run(name)
-        with open(CACHE / f"{name}.pkl", "wb") as fh:
+        tag = name + ("_cc" if complete_case else "")
+        print(f"=== {tag}", flush=True)
+        res = backtest.run(name, configs=C.detailed() if complete_case else None,
+                           ic=not complete_case, complete_case=complete_case)
+        with open(CACHE / f"{tag}.pkl", "wb") as fh:
             pickle.dump(res, fh)
-        report.analyse(res, reps=reps)
-        print(f"=== {name} done in {time.time() - t0:.0f}s", flush=True)
+        report.analyse(res, out=report.RESULTS / tag, reps=reps)
+        print(f"=== {tag} done in {time.time() - t0:.0f}s", flush=True)
 
 
 if __name__ == "__main__":
     args = sys.argv[1:] or ["all"]
-    main(available() if args == ["all"] else args)
+    cc = "--complete-case" in args
+    args = [a for a in args if a != "--complete-case"] or ["all"]
+    main(available() if args == ["all"] else args, complete_case=cc)
