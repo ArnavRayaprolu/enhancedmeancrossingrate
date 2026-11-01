@@ -103,6 +103,19 @@ def batch_it1():
     return specs
 
 
+
+
+def batch_it2():
+    """Fixed rank weights + cost-aware entry, band width, exit level, horizon."""
+    specs = {}
+    for c, w, e, x, md in itertools.product(["MCR", "HalfLife", "Cointegration"], [24, 72],
+                                            [2.5, 3.0], [0.0, -0.5], [0, 3]):
+        specs[f"{c}|w{w}|e{e}|x{x}|md{md}"] = Spec(
+            criterion=c, signal="LEVEL", window=w, entry=e, exit=x, n_pairs=10, max_uses=1,
+            top_k=100, weighting="rank", params={"min_dev_cost": md} if md else {})
+    return specs
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 3
