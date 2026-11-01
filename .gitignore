@@ -10,3 +10,4 @@ paper/*.synctex.gz
 data/_mirror/
 results/cache/
 results/mirror_perp_1h/
+results/dev_search/log.csv
