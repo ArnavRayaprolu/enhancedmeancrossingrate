@@ -35,6 +35,15 @@ CACHE = ROOT / "results" / "cache"
 _MEM: dict = {}
 
 
+def load_funding(index: pd.DatetimeIndex) -> pd.DataFrame:
+    """Funding rate settled in each bar (0 elsewhere); longs pay a positive rate."""
+    f = pd.read_parquet(DATA / "binance_perp_funding" / "funding.parquet").astype(float)
+    f.index = pd.to_datetime(f.index, utc=True)
+    pos = index.searchsorted(f.index, side="right") - 1        # bar containing settlement
+    f = f[pos >= 0]; pos = pos[pos >= 0]
+    return f.groupby(index[pos]).sum().reindex(index).fillna(0.0)
+
+
 def build_fold(close, dvol, meta, ds, f, train, fund=None) -> dict | None:
     """Everything one walk-forward window needs, computed from its own data."""
     names = eligible(close, dvol, meta, ds, f)
@@ -79,8 +88,8 @@ def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
         close, dvol = close[close.index >= start], dvol[dvol.index >= start]
     fund = None
     fp = DATA / "binance_perp_funding" / "funding.parquet"
-    if ds.source == "binance_perp_1h" and fp.exists():
-        fund = pd.read_parquet(fp).astype(float).reindex(close.index).fillna(0.0)
+    if ds.source.startswith("binance_perp") and fp.exists():
+        fund = load_funding(close.index)
     folds = []
     for f in make_folds(len(close), train, test):
         test_end = close.index[f["end"] - 1]
@@ -272,7 +281,7 @@ def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: boo
              log: bool = True, note: str = "", period: str = "dev") -> dict:
     ds = C.DATASETS[ds_name]
     kappa = (cost_bps if cost_bps is not None else ds.cost_bps) / 1e4
-    use_fund = funding and ds.source == "binance_perp_1h"
+    use_fund = funding and ds.source.startswith("binance_perp")
     borrow_bar = 0.0 if use_fund else ds.borrow_pa / ds.bars_per_year
     nets, gross, turn = [], [], []
     for f in dev_folds(ds_name, train, test, start, None if sp.top_k == 40 else sp.top_k,

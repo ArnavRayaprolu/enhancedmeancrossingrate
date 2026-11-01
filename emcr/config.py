@@ -185,3 +185,9 @@ DATASETS["sp500_1h_sector"] = Dataset("sp500_1h_sector", "sp500_1h", None, 7 * 2
                                       "S&P 500, 1h (within sector)", pairs="sector", top_k=100)
 DATASETS["nifty50_1h"] = Dataset("nifty50_1h", "nifty50_1h", None, 7 * 250, 5.0, 0.0,
                                  "NIFTY 50, 1h", pairs="all", top_k=100)
+
+# Binance USDT-M perpetuals at finer bars (ever-top-40 symbols, 2020-01 onwards).
+DATASETS["perp_15m"] = Dataset("perp_15m", "binance_perp_15m", None, 4 * H, 6.0, 0.0,
+                               "Binance perpetuals, 15m")
+DATASETS["perp_30m"] = Dataset("perp_30m", "binance_perp_15m", "30min", 2 * H, 6.0, 0.0,
+                               "Binance perpetuals, 30m")
