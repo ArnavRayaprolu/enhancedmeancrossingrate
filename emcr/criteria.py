@@ -76,8 +76,12 @@ def pair_statistics(px: np.ndarray, ia: np.ndarray, ib: np.ndarray, train_end: i
         s_all = spread(pa_all, pb_all, sig, out["beta"])
         z = zscore(s_all, sig, fast, slow)
         ztr = z[:train_end]
+        zc = ztr - np.nanmean(ztr, axis=0)
+        rho1 = np.nansum(zc[1:] * zc[:-1], axis=0) / np.nansum(zc * zc, axis=0)
         d = dict(z=z, mcr=signal_crossing_rate(ztr), halflife=half_life(s_all[:train_end]),
-                 ccr={})
+                 # arcsine law (Van Vleck and Middleton): implied crossing probability
+                 # of a Gaussian signal with lag-one autocorrelation rho1
+                 icr=np.arccos(np.clip(rho1, -1, 1)) / np.pi, ccr={})
         for (e, x) in thresholds.get(v, []):
             d["ccr"][(e, x)] = completed_cycle_rate(ztr, e, x)
         out["variants"][v] = d
@@ -106,6 +110,7 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
         "HalfLife": pct_rank(v["halflife"], False),
         "MCR": pct_rank(v["mcr"], True),
         "EMCR": pct_rank(v["mcr"], True),
+        "EMCR-implied": pct_rank(v["icr"], True),
         "CCR": pct_rank(v["ccr"][(entry, exit_)], True),
     }
     for h, (f1, f2) in C.HYBRIDS.items():
@@ -115,6 +120,7 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
     rk["EMCR+All"] = 0.5 * rk["EMCR"] + 0.5 * np.mean([rk[x] for x in C.CLASSICS], axis=0)
     # filter-then-rank: only pairs with Engle-Granger p < 0.10, ranked by EMCR
     rk["EMCR|Coint"] = np.where(stats["coint_p"] < 0.10, rk["EMCR"], 0.0)
+    rk["EMCR-implied+Cointegration"] = 0.5 * rk["EMCR-implied"] + 0.5 * rk["Cointegration"]
     return rk
 
 
