@@ -338,6 +338,41 @@ def bybit(start="2021-07-01", name="bybit_1h", top=TOP):
     _save(name, bars, "bybit")
 
 
+def _funding(sym: str, start: str):
+    keys, _ = _s3_list(f"data/futures/um/monthly/fundingRate/{sym}/")
+    keys = [k for k in keys if k.endswith(".zip") and k[-11:-4] >= start]
+    parts = []
+    for k in keys:
+        r = _get(f"{BV}/{k}")
+        if r is None:
+            continue
+        with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+            df = pd.read_csv(io.BytesIO(z.read(z.namelist()[0])))
+        tcol = [c for c in df.columns if "time" in c.lower()][0]
+        rcol = [c for c in df.columns if "rate" in c.lower()][0]
+        parts.append(pd.Series(df[rcol].astype(float).to_numpy(),
+                               index=pd.to_datetime(df[tcol].astype("int64"), unit="ms",
+                                                    utc=True)))
+    if not parts:
+        return None
+    s = pd.concat(parts).sort_index()
+    return s[~s.index.duplicated()]
+
+
+def binance_funding(name="binance_perp_funding", start="2020-01"):
+    """Funding rates of every USDT-M perpetual in data/binance_perp_1h, aligned to
+    the hour in which they are settled (long positions pay a positive rate)."""
+    syms = sorted(pd.read_csv(DATA / "binance_perp_1h" / "meta.csv")["ticker"])
+    out = _parallel(lambda s: _funding(s, start), syms, 16, name)
+    f = pd.DataFrame({s: v for s, v in out.items() if v is not None})
+    f.index = f.index.floor("h")
+    f = f.groupby(level=0).sum()
+    d = DATA / name
+    d.mkdir(parents=True, exist_ok=True)
+    f.astype("float32").to_parquet(d / "funding.parquet", compression="zstd")
+    print(f"[{name}] {f.shape}", flush=True)
+
+
 TASKS = {
     "binance_spot_1h": lambda: binance("spot", "1h", "2017-08", "binance_spot_1h"),
     "binance_spot_15m": lambda: binance("spot", "15m", "2021-01", "binance_spot_15m", top=40),
@@ -346,6 +381,7 @@ TASKS = {
     "bitstamp_1h": bitstamp,
     "okx_1h": okx,
     "bybit_1h": bybit,
+    "binance_perp_funding": binance_funding,
 }
 
 if __name__ == "__main__":

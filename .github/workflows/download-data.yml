@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dataset: [binance_spot_1h, binance_spot_15m, binance_perp_1h, coinbase_1h, bitstamp_1h, okx_1h, bybit_1h]
+        dataset: [binance_perp_funding]
     steps:
       - uses: actions/checkout@v4
         with:
