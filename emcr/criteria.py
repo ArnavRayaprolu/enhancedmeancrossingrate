@@ -105,6 +105,7 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
         "Cointegration": pct_rank(stats["coint_p"], False),
         "HalfLife": pct_rank(v["halflife"], False),
         "MCR": pct_rank(v["mcr"], True),
+        "EMCR": pct_rank(v["mcr"], True),
         "CCR": pct_rank(v["ccr"][(entry, exit_)], True),
     }
     for h, (f1, f2) in C.HYBRIDS.items():

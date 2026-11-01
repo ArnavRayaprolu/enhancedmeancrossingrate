@@ -160,17 +160,20 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
     # ---------------- 8. Reality Check / SPA over the searched space ----------
     rows = []
     D = pd.DataFrame({(key, m): daily[(key, m)] for (key, m) in daily})
+    def bench_of(m):
+        return C.HYBRIDS[m][1] if m in C.HYBRIDS else "Cointegration"
     for scope in ("all",) + C.SIGNALS:
         cols = []
         for (key, m) in daily:
             if m not in C.PROPOSED or (scope != "all" and not key.startswith(scope + "|")):
                 continue
-            if (key, "Cointegration") in daily:
-                cols.append(((key, m), (key, "Cointegration")))
+            if (key, bench_of(m)) in daily:
+                cols.append(((key, m), (key, bench_of(m))))
         if not cols:
             continue
         diffs = pd.DataFrame({f"{a[0]}::{a[1]}": D[a] - D[b] for a, b in cols})
-        rows.append(dict(scope=scope, benchmark="Cointegration (same config)",
+        rows.append(dict(scope=scope,
+                         benchmark="own classical component (EMCR: cointegration), same config",
                          **I.spa_test(diffs, reps=reps)))
     T["spa"] = pd.DataFrame(rows)
 
@@ -179,10 +182,8 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
     rows = []
     fam = grid[grid.criterion.isin(C.PROPOSED)]
     best = fam.loc[fam["sr_period"].idxmax()]
-    for label, key, m in (("best proposed config in grid", best.config, best.criterion),
-                          ("primary MCR", C.PRIMARY.key, "MCR"),
-                          ("primary CCR", C.PRIMARY.key, "CCR"),
-                          ("primary MCR+Coint", C.PRIMARY.key, "MCR+Coint")):
+    for label, key, m in ((("best proposed config in grid", best.config, best.criterion),)
+                          + tuple((f"primary {p}", C.PRIMARY.key, p) for p in C.PROPOSED)):
         if (key, m) in daily:
             rows.append(dict(label=label, config=key, criterion=m,
                              **I.deflated_sharpe(daily[(key, m)].to_numpy(), srs)))

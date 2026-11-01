@@ -49,10 +49,17 @@ def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
     close, dvol, meta = load(ds)
     configs = configs if configs is not None else C.grid()
     detail_keys = {c.key for c in C.detailed()}
-    ic_configs = [C.PRIMARY, C.HEDGED_BASE, C.MAD_ORIGINAL]
+    ic_configs = [C.PRIMARY]
     folds = make_folds(len(close))
     kappa = ds.cost_bps / 1e4
     borrow_bar = ds.borrow_pa / ds.bars_per_year
+    fund = None
+    if ds.source.startswith("binance_perp"):
+        from .explore import load_funding
+        try:
+            fund = load_funding(close.index)
+        except FileNotFoundError:
+            fund = None
 
     variants = sorted({c.variant for c in configs + ic_configs})
     thr = defaultdict(set)
@@ -68,6 +75,8 @@ def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
             continue
         blk = close.iloc[f["start"]:f["end"]][names].ffill()
         px = blk.to_numpy(); idx = blk.index
+        fblk = None if fund is None else \
+            fund.iloc[f["start"]:f["end"]].reindex(columns=names).fillna(0.0).to_numpy()
         te = slice(f["train_end"] - f["start"], f["end"] - f["start"])
         test_idx = idx[te]
         ia, ib = candidate_pairs(names, meta, ds.pairs)
@@ -102,7 +111,11 @@ def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
                 pos = pos_u[:, [col[j] for j in chosen]]
                 a, b = leg_weights(c.signal, stats["beta"][chosen], len(chosen))
                 ra, rb = rets[te][:, ia[chosen]], rets[te][:, ib[chosen]]
-                res = portfolio(pos, ra, rb, a, b, score[chosen], c.weighting, borrow_bar)
+                fa = fb = None
+                if fblk is not None:
+                    fa, fb = fblk[te][:, ia[chosen]], fblk[te][:, ib[chosen]]
+                res = portfolio(pos, ra, rb, a, b, score[chosen], c.weighting, borrow_bar,
+                                fa, fb)
                 key = (c.key, m)
                 if c.key in detail_keys:
                     expo = res["exposure"]
