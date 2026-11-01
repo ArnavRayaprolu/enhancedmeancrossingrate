@@ -32,12 +32,21 @@ CACHE = ROOT / "results" / "cache"
 # --------------------------------------------------------------------------- #
 # development data, prepared once per (dataset, formation, trading length)
 # --------------------------------------------------------------------------- #
+_MEM: dict = {}
+
+
 def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
-              start: str | None = None) -> list[dict]:
-    key = CACHE / f"dev_{ds_name}_{train}_{test}_{start}.pkl"
+              start: str | None = None, top_k: int | None = None) -> list[dict]:
+    key = CACHE / f"dev_{ds_name}_{train}_{test}_{start}_{top_k}.pkl"
+    if key in _MEM:
+        return _MEM[key]
     if key.exists():
-        return pickle.load(open(key, "rb"))
+        _MEM[key] = pickle.load(open(key, "rb"))
+        return _MEM[key]
     ds = C.DATASETS[ds_name]
+    if top_k is not None:
+        from dataclasses import replace
+        ds = replace(ds, top_k=top_k)
     close, dvol, meta = load(ds)
     if start:
         close, dvol = close[close.index >= start], dvol[dvol.index >= start]
@@ -70,6 +79,7 @@ def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
             beta=hedge_ratio(la, lb)))
     CACHE.mkdir(parents=True, exist_ok=True)
     pickle.dump(folds, open(key, "wb"))
+    _MEM[key] = folds
     return folds
 
 
@@ -88,6 +98,9 @@ class Spec:
     n_pairs: int = 5
     weighting: str = "active"
     coint_filter: float | None = None   # keep only pairs with EG p-value below this
+    top_k: int = 40                      # universe: top-K coins by formation dollar volume
+    max_uses: int = 1                    # max selected pairs per coin
+    gate: int | None = None              # regime gate: lookback (bars) of the recent MCR
     params: dict = field(default_factory=dict)
 
     def label(self) -> str:
@@ -188,16 +201,25 @@ def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: boo
     use_fund = funding and ds.source == "binance_perp_1h"
     borrow_bar = 0.0 if use_fund else ds.borrow_pa / ds.bars_per_year
     nets, gross, turn = [], [], []
-    for f in dev_folds(ds_name, train, test, start):
+    for f in dev_folds(ds_name, train, test, start, None if sp.top_k == 40 else sp.top_k):
         te = slice(f["train"], len(f["idx"]))
         assert f["idx"][-1] < HOLDOUT_START
         sc = scores(f, sp, kappa)
-        chosen = select(sc, f["ia"], f["ib"], sp.n_pairs)
+        chosen = select(sc, f["ia"], f["ib"], sp.n_pairs, sp.max_uses)
         if len(chosen) == 0:
             nets.append(pd.Series(0.0, index=f["idx"][te])); continue
-        z = _zcache(f, sp.signal, sp.window)["z"][:, chosen]
+        zc = _zcache(f, sp.signal, sp.window)
+        z = zc["z"][:, chosen]
+        allow = None
+        if sp.gate:
+            # open new trades only while the pair's recent crossing rate (last
+            # `gate` bars) is at least its formation-period crossing rate
+            sg = np.sign(z); sg[~np.isfinite(z)] = 0
+            ch = np.vstack([np.zeros((1, z.shape[1])), (sg[1:] * sg[:-1] < 0)]).astype(float)
+            rec = pd.DataFrame(ch).rolling(sp.gate, min_periods=sp.gate).mean().to_numpy()
+            allow = rec >= zc["mcr"][chosen][None, :]
         pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
-                                   stop=sp.stop, max_hold=sp.max_hold)
+                                   stop=sp.stop, max_hold=sp.max_hold, allow=allow)
         a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
         ia, ib = f["ia"][chosen], f["ib"][chosen]
         r = f["rets"][te]

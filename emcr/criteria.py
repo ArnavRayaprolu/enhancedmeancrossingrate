@@ -112,17 +112,21 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
     return rk
 
 
-def select(score: np.ndarray, ia: np.ndarray, ib: np.ndarray, n: int) -> np.ndarray:
-    """Greedy top-n selection with no security used twice.
-    Ties in the score are broken by candidate order (deterministic)."""
+def select(score: np.ndarray, ia: np.ndarray, ib: np.ndarray, n: int,
+           max_uses: int = 1) -> np.ndarray:
+    """Greedy top-n selection; each security may appear in at most `max_uses`
+    selected pairs (1 = no security used twice).  Ties in the score are broken
+    by candidate order (deterministic); pairs with score 0 are never selected."""
     order = np.lexsort((np.arange(len(score)), -score))
-    used, chosen = set(), []
+    used: dict = {}
+    chosen = []
     for j in order:
         if score[j] <= 0:
             break
-        if ia[j] in used or ib[j] in used:
+        if used.get(ia[j], 0) >= max_uses or used.get(ib[j], 0) >= max_uses:
             continue
-        chosen.append(j); used.update((ia[j], ib[j]))
+        chosen.append(j)
+        used[ia[j]] = used.get(ia[j], 0) + 1; used[ib[j]] = used.get(ib[j], 0) + 1
         if len(chosen) == n:
             break
     return np.array(chosen, dtype=int)

@@ -377,6 +377,8 @@ TASKS = {
     "binance_spot_1h": lambda: binance("spot", "1h", "2017-08", "binance_spot_1h"),
     "binance_spot_15m": lambda: binance("spot", "15m", "2021-01", "binance_spot_15m", top=40),
     "binance_perp_1h": lambda: binance("futures/um", "1h", "2020-01", "binance_perp_1h"),
+    "binance_perp_15m": lambda: binance("futures/um", "15m", "2020-01", "binance_perp_15m",
+                                        top=40),
     "coinbase_1h": coinbase,
     "bitstamp_1h": bitstamp,
     "okx_1h": okx,

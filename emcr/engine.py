@@ -25,7 +25,8 @@ import numpy as np
 
 
 def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = None,
-               max_hold: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+               max_hold: int | None = None, allow: np.ndarray | None = None
+               ) -> tuple[np.ndarray, np.ndarray]:
     """Vectorised state machine over the columns of z (T x P).
 
     Optional risk exits (off by default):
@@ -59,6 +60,8 @@ def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = N
         armed = np.where(risk, False, armed)
         armed = np.where(ok & (np.abs(zt) < entry), True, armed)
         flat = ok & (s == 0) & armed
+        if allow is not None:
+            flat &= allow[t]
         s = np.where(flat & (zt <= -entry), 1.0, s)
         s = np.where(flat & (zt >= entry), -1.0, s)
         out[t] = s
@@ -87,6 +90,8 @@ def positions_for_window(z: np.ndarray, start: int, end: int, entry: float,
     pos[t] = state after processing z[t-1]; decisions start at bar `start`
     (so the first bar is flat) and no decision is taken at the last bar
     (its position is liquidated at the close of the window)."""
+    if kw.get("allow") is not None:
+        kw = dict(kw, allow=kw["allow"][start:end - 1])
     st, _ = run_states(z[start:end - 1], entry, exit_, **kw)
     pos = np.zeros((end - start, z.shape[1]))
     pos[1:] = st

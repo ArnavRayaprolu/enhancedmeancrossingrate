@@ -32,6 +32,16 @@ def specs_scan1():
     return [(f"scan1 {k}", v) for k, v in groups.items()]
 
 
+def specs_scan2():
+    groups = {}
+    for k, u, n, c in itertools.product([40, 100], [1, 3], [5, 10, 20],
+                                        ["MCR", "Cointegration", "HalfLife"]):
+        groups.setdefault((k, c), []).append(
+            Spec(criterion=c, window=24, entry=2.5, n_pairs=n, weighting="equal",
+                 top_k=k, max_uses=u))
+    return [(f"scan2 {k}", v) for k, v in groups.items()]
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     jobs = globals()[f"specs_{name}"]()
@@ -39,5 +49,6 @@ if __name__ == "__main__":
         for res in p.imap_unordered(run_group, jobs):
             for sp, m in res:
                 print(f"{sp.signal:6s} w={sp.window:<4} e={sp.entry} n={sp.n_pairs:<3} "
+                      f"k={sp.top_k:<3} u={sp.max_uses} g={sp.gate} "
                       f"{sp.criterion:13s} sharpe={m['sharpe']:+.2f} gross={m['gross_pa']:+.2f} "
                       f"turn={m['turnover_pa']:.0f} ret={m['total_return']:+.2f}", flush=True)
