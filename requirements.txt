@@ -8,3 +8,4 @@ arch>=7.0
 requests>=2.31
 yfinance>=0.2.54
 pytest>=8
+optuna>=4.0

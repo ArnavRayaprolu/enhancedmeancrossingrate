@@ -35,13 +35,35 @@ CACHE = ROOT / "results" / "cache"
 _MEM: dict = {}
 
 
+def build_fold(close, dvol, meta, ds, f, train, fund=None) -> dict | None:
+    """Everything one walk-forward window needs, computed from its own data."""
+    names = eligible(close, dvol, meta, ds, f)
+    if len(names) < 4:
+        return None
+    blk = close.iloc[f["start"]:f["end"]][names].ffill()
+    px = blk.to_numpy()
+    ia, ib = candidate_pairs(names, meta, ds.pairs)
+    tr = px[:train]
+    la, lb = np.log(tr[:, ia]), np.log(tr[:, ib])
+    lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
+    na, nb = tr[:, ia] / tr[0, ia], tr[:, ib] / tr[0, ib]
+    return dict(
+        fold=f["fold"], idx=blk.index, train=train, names=names, px=px,
+        rets=np.vstack([np.zeros((1, px.shape[1])), px[1:] / px[:-1] - 1.0]),
+        fund=None if fund is None else
+        fund.iloc[f["start"]:f["end"]].reindex(columns=names).fillna(0.0).to_numpy(),
+        ia=ia, ib=ib, distance=((na - nb) ** 2).sum(0),
+        corr=(lr[:, ia] * lr[:, ib]).mean(0), coint_p=engle_granger_pvalue(la, lb),
+        beta=hedge_ratio(la, lb))
+
+
 def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
               start: str | None = None, top_k: int | None = None,
               period: str = "dev") -> list[dict]:
     """period="dev": trading windows ending before HOLDOUT_START (the search data).
     period="holdout": trading windows starting on/after HOLDOUT_START (final exam)."""
-    assert period in ("dev", "holdout")
-    tag = "dev" if period == "dev" else "holdout"
+    assert period in ("dev", "holdout", "all")
+    tag = period
     key = CACHE / f"{tag}_{ds_name}_{train}_{test}_{start}_{top_k}.pkl"
     if key in _MEM:
         return _MEM[key]
@@ -67,24 +89,9 @@ def dev_folds(ds_name: str, train: int = C.TRAIN_BARS, test: int = C.TEST_BARS,
             break
         if period == "holdout" and test_start < HOLDOUT_START:
             continue
-        names = eligible(close, dvol, meta, ds, f)
-        if len(names) < 4:
-            continue
-        blk = close.iloc[f["start"]:f["end"]][names].ffill()
-        px = blk.to_numpy()
-        ia, ib = candidate_pairs(names, meta, ds.pairs)
-        tr = px[:train]
-        la, lb = np.log(tr[:, ia]), np.log(tr[:, ib])
-        lr = np.diff(np.log(tr), axis=0); lr = (lr - lr.mean(0)) / lr.std(0)
-        na, nb = tr[:, ia] / tr[0, ia], tr[:, ib] / tr[0, ib]
-        folds.append(dict(
-            fold=f["fold"], idx=blk.index, train=train, names=names, px=px,
-            rets=np.vstack([np.zeros((1, px.shape[1])), px[1:] / px[:-1] - 1.0]),
-            fund=None if fund is None else
-            fund.iloc[f["start"]:f["end"]].reindex(columns=names).fillna(0.0).to_numpy(),
-            ia=ia, ib=ib, distance=((na - nb) ** 2).sum(0),
-            corr=(lr[:, ia] * lr[:, ib]).mean(0), coint_p=engle_granger_pvalue(la, lb),
-            beta=hedge_ratio(la, lb)))
+        fd = build_fold(close, dvol, meta, ds, f, train, fund)
+        if fd is not None:
+            folds.append(fd)
     CACHE.mkdir(parents=True, exist_ok=True)
     pickle.dump(folds, open(key, "wb"))
     _MEM[key] = folds
@@ -231,6 +238,35 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
     return s
 
 
+def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool):
+    """Select pairs on the formation window and trade them over the trading window.
+    Returns (net return per trading bar, gross sum, turnover sum)."""
+    te = slice(f["train"], len(f["idx"]))
+    sc = scores(f, sp, kappa)
+    chosen = select(sc, f["ia"], f["ib"], sp.n_pairs, sp.max_uses)
+    if len(chosen) == 0:
+        return np.zeros(te.stop - te.start), 0.0, 0.0
+    zc = _zcache(f, sp.signal, sp.window)
+    z = zc["z"][:, chosen]
+    allow = None
+    if sp.gate:
+        sg = np.sign(z); sg[~np.isfinite(z)] = 0
+        ch = np.vstack([np.zeros((1, z.shape[1])), (sg[1:] * sg[:-1] < 0)]).astype(float)
+        rec = pd.DataFrame(ch).rolling(sp.gate, min_periods=sp.gate).mean().to_numpy()
+        allow = rec >= zc["mcr"][chosen][None, :]
+    pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
+                               stop=sp.stop, max_hold=sp.max_hold, allow=allow)
+    a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
+    ia, ib = f["ia"][chosen], f["ib"][chosen]
+    r = f["rets"][te]
+    fa = fb = None
+    if use_fund and f.get("fund") is not None:
+        fa, fb = f["fund"][te][:, ia], f["fund"][te][:, ib]
+    res = portfolio(pos, r[:, ia], r[:, ib], a, b, sc[chosen], sp.weighting, borrow_bar, fa, fb)
+    n = res["gross"] - kappa * res["turn"] - res["borrow"]
+    return n, float(res["gross"].sum()), float(res["turn"].sum())
+
+
 def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: bool = True,
              train: int = C.TRAIN_BARS, test: int = C.TEST_BARS, start: str | None = None,
              log: bool = True, note: str = "", period: str = "dev") -> dict:
@@ -244,35 +280,10 @@ def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: boo
         te = slice(f["train"], len(f["idx"]))
         if period == "dev":
             assert f["idx"][-1] < HOLDOUT_START
-        else:
+        elif period == "holdout":
             assert f["idx"][te][0] >= HOLDOUT_START
-        sc = scores(f, sp, kappa)
-        chosen = select(sc, f["ia"], f["ib"], sp.n_pairs, sp.max_uses)
-        if len(chosen) == 0:
-            nets.append(pd.Series(0.0, index=f["idx"][te])); continue
-        zc = _zcache(f, sp.signal, sp.window)
-        z = zc["z"][:, chosen]
-        allow = None
-        if sp.gate:
-            # open new trades only while the pair's recent crossing rate (last
-            # `gate` bars) is at least its formation-period crossing rate
-            sg = np.sign(z); sg[~np.isfinite(z)] = 0
-            ch = np.vstack([np.zeros((1, z.shape[1])), (sg[1:] * sg[:-1] < 0)]).astype(float)
-            rec = pd.DataFrame(ch).rolling(sp.gate, min_periods=sp.gate).mean().to_numpy()
-            allow = rec >= zc["mcr"][chosen][None, :]
-        pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
-                                   stop=sp.stop, max_hold=sp.max_hold, allow=allow)
-        a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
-        ia, ib = f["ia"][chosen], f["ib"][chosen]
-        r = f["rets"][te]
-        fa = fb = None
-        if use_fund and f["fund"] is not None:
-            fa, fb = f["fund"][te][:, ia], f["fund"][te][:, ib]
-        res = portfolio(pos, r[:, ia], r[:, ib], a, b, sc[chosen], sp.weighting, borrow_bar,
-                        fa, fb)
-        n = res["gross"] - kappa * res["turn"] - res["borrow"]
-        nets.append(pd.Series(n, index=f["idx"][te]))
-        gross.append(res["gross"].sum()); turn.append(res["turn"].sum())
+        n, g, u = run_fold(f, sp, kappa, borrow_bar, use_fund)
+        nets.append(pd.Series(n, index=f["idx"][te])); gross.append(g); turn.append(u)
     net = pd.concat(nets).sort_index()
     bpy = ds.bars_per_year * (C.TEST_BARS / test if False else 1)
     dly = net.groupby(net.index.floor("D")).sum()
