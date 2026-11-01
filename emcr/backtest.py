@@ -37,7 +37,7 @@ def _trades(pos, W, unit, idx, names, fold) -> list[dict]:
 
 
 def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
-        complete_case: bool = False, verbose: bool = True) -> dict:
+        complete_case: bool = False, verbose: bool = True, detail_extra=None) -> dict:
     """Run the walk-forward for one dataset.
 
     Returns bar-level results for the `C.detailed()` configurations, net
@@ -48,7 +48,7 @@ def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
     ds = C.DATASETS[ds_name]
     close, dvol, meta = load(ds)
     configs = configs if configs is not None else C.grid()
-    detail_keys = {c.key for c in C.detailed()}
+    detail_keys = {c.key for c in C.detailed() + list(detail_extra or [])}
     ic_configs = [C.PRIMARY]
     folds = make_folds(len(close))
     kappa = ds.cost_bps / 1e4
@@ -109,6 +109,10 @@ def run(ds_name: str, configs: list[C.Config] | None = None, ic: bool = True,
                 if len(chosen) == 0:
                     continue
                 pos = pos_u[:, [col[j] for j in chosen]]
+                if c.lag:
+                    # execution delay: decisions at the close of bar t are executed at
+                    # the close of bar t + lag
+                    pos = np.vstack([np.zeros((c.lag, pos.shape[1])), pos[:-c.lag]])
                 a, b = leg_weights(c.signal, stats["beta"][chosen], len(chosen))
                 ra, rb = rets[te][:, ia[chosen]], rets[te][:, ib[chosen]]
                 fa = fb = None

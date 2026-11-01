@@ -68,12 +68,14 @@ class Config:
     n_pairs: int = 20
     weighting: str = "rank"        # "rank" (fixed rank weights) or "active" (paper Eq. 8)
     fast: int = 35                 # MAD fast window (bars)
+    lag: int = 0                   # execution delay in bars (robustness: bid-ask bounce)
 
     @property
     def key(self) -> str:
         f = f"f{self.fast}" if self.signal == "MAD" else ""
+        lag = f"|lag{self.lag}" if self.lag else ""
         return (f"{self.signal}|{f}w{self.window}|e{self.entry:g}|x{self.exit:g}"
-                f"|n{self.n_pairs}|{self.weighting}")
+                f"|n{self.n_pairs}|{self.weighting}{lag}")
 
     @property
     def variant(self) -> tuple:
@@ -86,6 +88,9 @@ MAD_RANK = Config(signal="MAD", entry=1.0, exit=0.25)                # original 
 MAD_ORIGINAL = Config(signal="MAD", entry=1.0, exit=0.25, n_pairs=5, weighting="active")
 HEDGED_BASE = Config(signal="HEDGED")                                # cointegrating spread
 LEVEL_BASE = PRIMARY
+
+
+DELAYED = Config(lag=1)                                              # 1-bar execution delay
 
 
 def detailed() -> list[Config]:
