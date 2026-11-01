@@ -229,6 +229,23 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
         if k2 not in f:
             f[k2] = completed_cycle_rate(zc["z"][:f["train"]], delta, 0.0)
         s = rk(f[k2])
+    elif c in ("ECR", "MCRms"):
+        # multi-horizon equilibrium-crossing rate: average percentile rank of the
+        # crossing rate measured around trailing means of several lengths.
+        # ECR counts only completed band-to-mean cycles (z-score hysteresis at
+        # +-entry); MCRms counts every crossing of the mean.
+        ws = sp.params.get("windows", (24, 72, 168))
+        acc = 0.0
+        for w in ws:
+            zw = _zcache(f, "LEVEL", w)
+            if c == "MCRms":
+                acc = acc + rk(zw["mcr"])
+            else:
+                k2 = ("ccr_w", w, sp.params.get("band", 2.0))
+                if k2 not in f:
+                    f[k2] = completed_cycle_rate(zw["z"][:f["train"]], sp.params.get("band", 2.0), 0.0)
+                acc = acc + rk(f[k2])
+        s = acc / len(ws)
     elif c == "MCR2":
         # two-horizon mean-crossing rate: crossings of the ratio through its fast
         # moving mean (tempo) and through its long-run formation mean (equilibrium)
@@ -269,10 +286,17 @@ def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool)
     a, b = leg_weights(sp.signal, f["beta"][chosen], len(chosen))
     ia, ib = f["ia"][chosen], f["ib"][chosen]
     r = f["rets"][te]
+    score = sc[chosen]
+    if sp.params.get("vol_scale"):
+        # risk balance: divide each pair's rank score by the volatility of its
+        # unit return over the formation window (known before trading starts)
+        rf = f["rets"][:f["train"]]
+        vol = (a[None, :] * rf[:, ia] + b[None, :] * rf[:, ib]).std(0)
+        score = score / np.maximum(vol, 1e-8)
     fa = fb = None
     if use_fund and f.get("fund") is not None:
         fa, fb = f["fund"][te][:, ia], f["fund"][te][:, ib]
-    res = portfolio(pos, r[:, ia], r[:, ib], a, b, sc[chosen], sp.weighting, borrow_bar, fa, fb)
+    res = portfolio(pos, r[:, ia], r[:, ib], a, b, score, sp.weighting, borrow_bar, fa, fb)
     n = res["gross"] - kappa * res["turn"] - res["borrow"]
     return n, res["gross"], res["turn"]
 

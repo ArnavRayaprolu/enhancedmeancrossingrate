@@ -128,6 +128,10 @@ def portfolio(pos: np.ndarray, rets_a: np.ndarray, rets_b: np.ndarray,
         w = np.divide(sc, tot, out=np.zeros_like(sc), where=tot > 0)
     elif weighting == "equal":
         w = active / N
+    elif weighting == "rank":
+        # rank-weighted over ALL selected pairs, fixed for the window: a pair's
+        # capital does not change when other pairs open or close (no re-splitting)
+        w = active * (score / score.sum())[None, :]
     else:
         raise ValueError(weighting)
     W = w * pos                                            # signed pair weights
