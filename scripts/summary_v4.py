@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from emcr import config as C, inference as I  # noqa: E402
+from emcr import config as C, figures as F, inference as I  # noqa: E402
 
 RES = Path(__file__).resolve().parents[1] / "results"
 OUT = RES / "summary_v4"
@@ -58,6 +58,10 @@ def main():
     sh = prim.pivot(index="dataset", columns="criterion", values="sharpe").reindex(ds_list)
     sh = sh[[c for c in C.CRITERIA if c in sh]]
     sh.to_csv(OUT / "sharpe_primary.csv")
+    F.sharpe_heatmap(sh, OUT / "fig_sharpe_heatmap.pdf",
+                     "Net Sharpe ratio by universe/interval and selection method")
+    F.sharpe_heatmap(sh, OUT / "fig_sharpe_heatmap.png",
+                     "Net Sharpe ratio by universe/interval and selection method")
     for col in ("total_return", "max_drawdown", "turnover_pa", "breakeven_arith_bps",
                 "breakeven_comp_bps", "cagr", "ann_vol", "sortino"):
         prim.pivot(index="dataset", columns="criterion", values=col).reindex(ds_list)[
@@ -72,8 +76,7 @@ def main():
 
     # 3. hybrid vs its own classical component, dataset by dataset
     rows = []
-    for x in C.CLASSICS:
-        h = f"EMCR+{x}"
+    for h, x in [(f"EMCR+{c}", c) for c in C.CLASSICS] + [(e, "Cointegration") for e in C.EXTENDED]:
         diff = (sh[h] - sh[x]).dropna()
         rows.append(dict(hybrid=h, component=x, datasets=len(diff), hybrid_better=int((diff > 0).sum()),
                          median_sharpe_gain=float(diff.median()), mean_sharpe_gain=float(diff.mean())))

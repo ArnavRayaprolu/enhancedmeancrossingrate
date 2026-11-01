@@ -54,7 +54,7 @@ def sharpe_heatmap(perf: pd.DataFrame, path: Path, title: str = ""):
     v = np.nanmax(np.abs(M.to_numpy())) or 1.0
     fig, ax = plt.subplots(figsize=(7.2, 0.42 * len(M) + 1.2))
     im = ax.imshow(M.to_numpy(), cmap=DIVERGING, norm=TwoSlopeNorm(0, -v, v), aspect="auto")
-    ax.set_xticks(range(len(cols)), [LABEL[c] for c in cols], rotation=30, ha="right")
+    ax.set_xticks(range(len(cols)), [LABEL.get(c, c) for c in cols], rotation=30, ha="right")
     ax.set_yticks(range(len(M)), [DS_LABEL.get(i, i) for i in M.index])
     ax.grid(False)
     for i in range(M.shape[0]):
@@ -81,7 +81,7 @@ def equity_panels(series: dict, path: Path, ncols: int = 2):
             if m not in series[ds]:
                 continue
             eq = (1 + series[ds][m]).cumprod()
-            ax.plot(eq.index, eq.to_numpy(), label=LABEL[m], **STYLE[m])
+            ax.plot(eq.index, eq.to_numpy(), label=LABEL.get(m, m), **STYLE[m])
             ax.annotate(f"{eq.iloc[-1] - 1:+.0%}", (eq.index[-1], eq.iloc[-1]),
                         xytext=(3, 0), textcoords="offset points", fontsize=7,
                         color=INK2, va="center")
@@ -166,7 +166,7 @@ def cost_curves(cost: pd.DataFrame, path: Path):
     for ax, ds in zip(axes.ravel(), names):
         for m in ("Cointegration", "MCR+Coint", "MCR"):
             g = cost[(cost.dataset == ds) & (cost.criterion == m)]
-            ax.plot(g["cost_bps"], g["sharpe"], marker="o", ms=3, label=LABEL[m], **STYLE[m])
+            ax.plot(g["cost_bps"], g["sharpe"], marker="o", ms=3, label=LABEL.get(m, m), **STYLE[m])
         ax.axhline(0, color=MUTED, lw=0.8)
         ax.axvline(C.DATASETS[ds].cost_bps, color=MUTED, lw=0.8, ls=":")
         ax.set_title(DS_LABEL.get(ds, ds), loc="left", color=INK, fontsize=8)
