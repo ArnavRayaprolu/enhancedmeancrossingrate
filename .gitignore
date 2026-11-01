@@ -8,5 +8,4 @@ paper/*.fls
 paper/*.fdb_latexmk
 paper/*.synctex.gz
 data/_mirror/
-data/binance_perp_1h/
 results/cache/
