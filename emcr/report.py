@@ -63,7 +63,7 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
 
     # ---------------- 3. Diebold-Mariano (primary + secondary) -----------------
     rows = []
-    for cfg in [C.Config(signal=s, weighting=w) for s in C.SIGNALS for w in C.GRID_WEIGHTING]:
+    for cfg in C.detailed():
         for a in C.PROPOSED:
             for b in C.BENCHMARKS:
                 if (cfg.key, a) not in res["detail"] or (cfg.key, b) not in res["detail"]:
@@ -142,7 +142,7 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
                          sr_period=float(d.mean() / d.std()) if d.std() > 0 else 0.0))
     grid = pd.DataFrame(rows)
     parts = grid["config"].str.split("|", expand=True)
-    grid["signal"], grid["ma"], grid["entry"] = parts[0], parts[1], parts[2]
+    grid["signal"], grid["window"], grid["entry"] = parts[0], parts[1], parts[2]
     grid["exit"], grid["n"], grid["weighting"] = parts[3], parts[4], parts[5]
     T["grid"] = grid
 
@@ -180,8 +180,9 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
     fam = grid[grid.criterion.isin(C.PROPOSED)]
     best = fam.loc[fam["sr_period"].idxmax()]
     for label, key, m in (("best proposed config in grid", best.config, best.criterion),
-                          ("primary SCR+Coint", C.PRIMARY.key, "SCR+Coint"),
-                          ("primary CCR+Coint", C.PRIMARY.key, "CCR+Coint")):
+                          ("primary MCR", C.PRIMARY.key, "MCR"),
+                          ("primary CCR", C.PRIMARY.key, "CCR"),
+                          ("primary MCR+Coint", C.PRIMARY.key, "MCR+Coint")):
         if (key, m) in daily:
             rows.append(dict(label=label, config=key, criterion=m,
                              **I.deflated_sharpe(daily[(key, m)].to_numpy(), srs)))
@@ -191,10 +192,10 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
     if res.get("ic") is not None:
         ic = res["ic"]
         T["ic"] = pd.concat([I.information_coefficients(ic, o).assign(outcome=o)
-                             for o in ("oos_net", "oos_trades", "oos_scr")])
+                             for o in ("oos_net", "oos_trades", "oos_mcr")])
         rows = []
         for (sig, fold), g in ic.groupby(["signal", "fold"]):
-            x = g[["scr", "ccr", "halflife", "ar1", "coint_p", "oos_trades", "oos_net"]]
+            x = g[["mcr", "ccr", "halflife", "ar1", "coint_p", "oos_trades", "oos_net"]]
             x = x.replace([np.inf, -np.inf], np.nan)
             rho = x.rank().corr()
             for i in rho.index:
@@ -202,12 +203,12 @@ def analyse(res: dict, out: Path | None = None, reps: int = 2000) -> dict:
                     rows.append(dict(signal=sig, fold=fold, x=i, y=j, rho=rho.loc[i, j]))
         T["feature_corr"] = (pd.DataFrame(rows).groupby(["signal", "x", "y"])["rho"]
                              .mean().unstack("y").reset_index())
-        g = ic[np.isfinite(ic["ar1"]) & np.isfinite(ic["scr"])]
+        g = ic[np.isfinite(ic["ar1"]) & np.isfinite(ic["mcr"])]
         implied = np.arccos(np.clip(g["ar1"], -1, 1)) / np.pi
-        T["arcsine"] = (pd.DataFrame(dict(signal=g["signal"], err=(g["scr"] - implied).abs(),
-                                          scr=g["scr"], implied=implied))
+        T["arcsine"] = (pd.DataFrame(dict(signal=g["signal"], err=(g["mcr"] - implied).abs(),
+                                          mcr=g["mcr"], implied=implied))
                         .groupby("signal").agg(mean_abs_err=("err", "mean"),
-                                               median_scr=("scr", "median"),
+                                               median_mcr=("mcr", "median"),
                                                median_implied=("implied", "median"))
                         .reset_index())
 

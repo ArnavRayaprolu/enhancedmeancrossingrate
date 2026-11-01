@@ -7,8 +7,7 @@ from statsmodels.tsa.adfvalues import mackinnonp
 
 from . import config as C
 from .engine import completed_cycle_rate
-from .signals import (half_life, hedge_ratio, lag1_autocorr, signal_crossing_rate,
-                      spread, zscore)
+from .signals import half_life, hedge_ratio, signal_crossing_rate, spread, zscore
 
 
 # --------------------------------------------------------------------------- #
@@ -51,11 +50,11 @@ def pair_statistics(px: np.ndarray, ia: np.ndarray, ib: np.ndarray, train_end: i
     px        (T, K) forward-filled prices of the fold (train + test)
     ia, ib    indices of leg A / leg B for each candidate pair (A < B)
     train_end first test bar; statistics use bars [0, train_end) only
-    variants  (signal, fast, slow) combinations whose SCR/CCR are needed
+    variants  (signal, fast, slow) combinations whose MCR/CCR are needed
     thresholds per variant, the (entry, exit) pairs for which CCR is needed
 
     Returns a dict with signal-independent statistics, and per variant the
-    z-score over the WHOLE fold (for trading) plus SCR / CCR / half-life / AR(1)
+    z-score over the WHOLE fold (for trading) plus MCR / CCR / half-life
     on the formation window.
     """
     tr = px[:train_end]
@@ -77,8 +76,8 @@ def pair_statistics(px: np.ndarray, ia: np.ndarray, ib: np.ndarray, train_end: i
         s_all = spread(pa_all, pb_all, sig, out["beta"])
         z = zscore(s_all, sig, fast, slow)
         ztr = z[:train_end]
-        d = dict(z=z, scr=signal_crossing_rate(ztr), halflife=half_life(s_all[:train_end]),
-                 ar1=lag1_autocorr(ztr) if len(ia) <= 5000 else None, ccr={})
+        d = dict(z=z, mcr=signal_crossing_rate(ztr), halflife=half_life(s_all[:train_end]),
+                 ccr={})
         for (e, x) in thresholds.get(v, []):
             d["ccr"][(e, x)] = completed_cycle_rate(ztr, e, x)
         out["variants"][v] = d
@@ -105,7 +104,7 @@ def criterion_scores(stats: dict, variant: tuple, entry: float, exit_: float) ->
         "Correlation": pct_rank(stats["corr"], True),
         "Cointegration": pct_rank(stats["coint_p"], False),
         "HalfLife": pct_rank(v["halflife"], False),
-        "SCR": pct_rank(v["scr"], True),
+        "MCR": pct_rank(v["mcr"], True),
         "CCR": pct_rank(v["ccr"][(entry, exit_)], True),
     }
     for h, (f1, f2) in C.HYBRIDS.items():

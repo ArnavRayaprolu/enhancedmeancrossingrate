@@ -180,7 +180,7 @@ def bootstrap_ci(r: np.ndarray, periods_per_year: float, reps: int = 2000,
 # --------------------------------------------------------------------------- #
 # pair-level information coefficients
 # --------------------------------------------------------------------------- #
-IC_FEATURES = {"scr": True, "ccr": True, "halflife": False, "ar1": False,
+IC_FEATURES = {"mcr": True, "ccr": True, "halflife": False, "ar1": False,
                "coint_p": False, "distance": False, "corr": True}
 
 

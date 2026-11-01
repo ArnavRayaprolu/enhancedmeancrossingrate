@@ -23,17 +23,14 @@ DIVERGING = LinearSegmentedColormap.from_list(
     "bgr", ["#104281", "#3987e5", "#cde2fb", "#f0efec", "#f6c8c4", "#e34948", "#8f1d1c"])
 
 STYLE = {
-    "SCR+Coint": dict(color=BLUE, lw=1.8, ls="-"),
-    "CCR+Coint": dict(color=ORANGE, lw=1.8, ls="-"),
+    "MCR": dict(color=BLUE, lw=1.8, ls="-"),
+    "MCR+Coint": dict(color=ORANGE, lw=1.6, ls="-"),
     "Cointegration": dict(color=INK2, lw=1.4, ls="--"),
 }
 LABEL = {"Distance": "Distance", "Correlation": "Correlation", "Cointegration": "Cointegration",
-         "HalfLife": "Half-life", "SCR": "SCR", "CCR": "CCR",
-         "SCR+Coint": "SCR+Coint", "CCR+Coint": "CCR+Coint"}
-DS_LABEL = {"sp500_1h": "S&P 500, 1h (dev.)", "sp500_1d": "S&P 500, 1d",
-            "etf_1d": "ETFs, 1d", "crypto_1h": "Crypto spot, 1h", "crypto_4h": "Crypto spot, 4h",
-            "crypto_1d": "Crypto spot, 1d", "perp_1h": "Crypto perps, 1h",
-            "perp_4h": "Crypto perps, 4h"}
+         "HalfLife": "Half-life", "MCR": "MCR", "CCR": "CCR",
+         "MCR+Coint": "MCR+Coint", "CCR+Coint": "CCR+Coint"}
+DS_LABEL = {k: v.label for k, v in C.DATASETS.items()}
 
 plt.rcParams.update({
     "font.size": 9, "axes.titlesize": 9, "axes.labelsize": 9, "legend.fontsize": 8,
@@ -80,7 +77,7 @@ def equity_panels(series: dict, path: Path, ncols: int = 2):
     nrows = int(np.ceil(len(names) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(7.2, 2.1 * nrows), squeeze=False)
     for ax, ds in zip(axes.ravel(), names):
-        for m in ("Cointegration", "SCR+Coint", "CCR+Coint"):
+        for m in ("Cointegration", "MCR+Coint", "MCR"):
             if m not in series[ds]:
                 continue
             eq = (1 + series[ds][m]).cumprod()
@@ -106,36 +103,39 @@ def equity_panels(series: dict, path: Path, ncols: int = 2):
 
 
 def grid_differences(diffs: dict, path: Path):
-    """diffs: {dataset: {hybrid: array of Sharpe(hybrid) - Sharpe(Coint) over configs}}."""
+    """diffs: {dataset: {benchmark: array of Sharpe(MCR) - Sharpe(benchmark) over configs}}."""
+    comps = (("Distance", BLUE), ("Correlation", ORANGE), ("Cointegration", "#1baf7a"))
     names = list(diffs)
-    fig, ax = plt.subplots(figsize=(7.2, 0.5 * len(names) + 1.0))
+    fig, ax = plt.subplots(figsize=(7.2, 0.62 * len(names) + 1.0))
     for i, ds in enumerate(names):
-        for off, (m, col) in zip((-0.17, 0.17), (("SCR+Coint", BLUE), ("CCR+Coint", ORANGE))):
-            d = np.asarray(diffs[ds].get(m, []))
+        for off, (m, col) in zip((-0.22, 0.0, 0.22), comps):
+            d = np.asarray(diffs[ds].get(m, []), float)
             d = d[np.isfinite(d)]
             if not len(d):
                 continue
             q1, med, q3 = np.percentile(d, [25, 50, 75]); lo, hi = np.percentile(d, [5, 95])
             y = i + off
             ax.plot([lo, hi], [y, y], color=col, lw=1.0)
-            ax.plot([q1, q3], [y, y], color=col, lw=5, solid_capstyle="butt", alpha=0.85)
-            ax.plot(med, y, "o", ms=6, color="white", mec=col, mew=1.6, zorder=3)
-            ax.text(hi, y, f"  {(d > 0).mean():.0%} > 0", va="center", fontsize=7, color=INK2)
+            ax.plot([q1, q3], [y, y], color=col, lw=4, solid_capstyle="butt", alpha=0.9)
+            ax.plot(med, y, "o", ms=5, color="white", mec=col, mew=1.5, zorder=3)
+            ax.text(hi, y, f"  {(d > 0).mean():.0%}", va="center", fontsize=6.5, color=INK2)
     ax.axvline(0, color=INK2, lw=0.9)
     ax.set_yticks(range(len(names)), [DS_LABEL.get(n, n) for n in names])
     ax.invert_yaxis()
-    ax.set_xlabel("Sharpe(hybrid) - Sharpe(cointegration), same configuration")
+    ax.set_xlabel("Sharpe(MCR) − Sharpe(benchmark), same configuration "
+                  "(median, IQR, 5–95%; label = share > 0)")
     from matplotlib.lines import Line2D
-    ax.legend([Line2D([], [], color=BLUE, lw=5), Line2D([], [], color=ORANGE, lw=5)],
-              ["SCR+Coint", "CCR+Coint"], loc="lower right", frameon=False)
+    ax.legend([Line2D([], [], color=c, lw=4) for _, c in comps],
+              [f"vs {m}" for m, _ in comps], loc="upper center", frameon=False, ncol=3,
+              bbox_to_anchor=(0.5, -0.12 - 0.02 * len(names)))
     ax.grid(axis="y", visible=False)
     _save(fig, path)
 
 
-def ic_dots(ic: pd.DataFrame, path: Path, outcome: str = "oos_net", signal: str = "MAD"):
+def ic_dots(ic: pd.DataFrame, path: Path, outcome: str = "oos_net", signal: str = "LEVEL"):
     """Mean fold-level IC +/- 2 s.e. for each feature, one row per dataset."""
-    feats = ["scr", "ccr", "halflife", "ar1", "coint_p", "distance", "corr"]
-    flab = {"scr": "SCR", "ccr": "CCR", "halflife": "half-life", "ar1": "AR(1) of z",
+    feats = ["mcr", "ccr", "halflife", "ar1", "coint_p", "distance", "corr"]
+    flab = {"mcr": "MCR", "ccr": "CCR", "halflife": "half-life", "ar1": "AR(1) of z",
             "coint_p": "coint. p", "distance": "distance", "corr": "correlation"}
     d = ic[(ic.outcome == outcome) & (ic.signal == signal)]
     names = list(dict.fromkeys(d["dataset"]))
@@ -164,7 +164,7 @@ def cost_curves(cost: pd.DataFrame, path: Path):
     ncols = min(4, len(names)); nrows = int(np.ceil(len(names) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(7.2, 1.9 * nrows + 0.4), squeeze=False)
     for ax, ds in zip(axes.ravel(), names):
-        for m in ("Cointegration", "SCR+Coint", "CCR+Coint"):
+        for m in ("Cointegration", "MCR+Coint", "MCR"):
             g = cost[(cost.dataset == ds) & (cost.criterion == m)]
             ax.plot(g["cost_bps"], g["sharpe"], marker="o", ms=3, label=LABEL[m], **STYLE[m])
         ax.axhline(0, color=MUTED, lw=0.8)

@@ -61,7 +61,7 @@ def eligible(close: pd.DataFrame, dvol: pd.DataFrame, meta: pd.DataFrame,
     cov = tr.notna().mean()
     need = 1.0 if complete_case else C.MIN_COVERAGE
     ok = (cov >= need) & tr.iloc[0].notna() & tr.iloc[-1].notna()
-    if ds.point_in_time_members and "date_added" in meta:
+    if "date_added" in meta and (meta["date_added"] != "").any():
         added = pd.to_datetime(meta["date_added"], errors="coerce", utc=True)
         ok &= ~(added > tr.index[0]).reindex(ok.index).fillna(False)
     names = ok[ok].index

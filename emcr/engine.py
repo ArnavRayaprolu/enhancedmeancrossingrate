@@ -53,7 +53,7 @@ def completed_cycle_rate(z: np.ndarray, entry: float, exit_: float) -> np.ndarra
     """CCR: completed entry-to-exit cycles per valid bar in the formation window.
 
     This is the empirical N(T)/T of the paper's Eq. (14): the number of round
-    trips the engine itself would have completed in-sample.  Unlike SCR it
+    trips the engine itself would have completed in-sample.  Unlike MCR it
     ignores small oscillations around zero that never reach the entry band.
     """
     _, closed = run_states(z, entry, exit_)
