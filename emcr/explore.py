@@ -118,13 +118,13 @@ def _zcache(f: dict, signal: str, window: int, fast: int = 35):
             s = np.log(pa / pb)
             mu, sd = s[tr].mean(0), s[tr].std(0, ddof=1)
             z = (s - mu) / sd
-            f[k] = dict(z=z, mcr=signal_crossing_rate(z[tr]), halflife=half_life(s[tr]),
-                        sd_rel=sd)
+            f[k] = dict(z=z.astype("float32"), mcr=signal_crossing_rate(z[tr]),
+                        halflife=half_life(s[tr]), sd_rel=sd)
             return f[k]
         s = spread(pa, pb, signal, f["beta"])
         z = zscore(s, signal, fast, window)
         sd_rel = rolling_std(s, window) / np.abs(rolling_mean(s, window))
-        f[k] = dict(z=z, mcr=signal_crossing_rate(z[tr]),
+        f[k] = dict(z=z.astype("float32"), mcr=signal_crossing_rate(z[tr]),
                     halflife=half_life(s[tr]),
                     sd_rel=np.nanmean(sd_rel[tr], axis=0))
     return f[k]

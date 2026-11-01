@@ -62,10 +62,20 @@ def specs_scan4():
     return [(f"scan4 {k}", v) for k, v in groups.items()]
 
 
+def specs_scan3b():
+    return [(f"scan3 {g}", [sp for sp in v]) for g, v in
+            [(k, v) for k, v in dict((k2, v2) for k2, v2 in
+             [((c, u, n), [Spec(criterion=c, window=24, entry=e, exit=x, gate=g, n_pairs=n,
+                                max_uses=u, top_k=100, weighting="equal")
+                           for e, x, g in itertools.product([2.5, 3.0], [0.0, -0.5], [None, 48])])
+              for c, u, n in [("HalfLife", 1, 5), ("MCR", 3, 10)]]).items()]]
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     jobs = globals()[f"specs_{name}"]()
-    with Pool(4) as p:
+    workers = int(sys.argv[2]) if len(sys.argv) > 2 else 4
+    with Pool(workers) as p:
         for res in p.imap_unordered(run_group, jobs):
             for sp, m in res:
                 print(f"{sp.signal:6s} w={sp.window:<4} e={sp.entry} n={sp.n_pairs:<3} "
