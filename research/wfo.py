@@ -19,8 +19,9 @@ Strategy (raw price ratio, no z-score)
               ratio first moved at least delta away from the mean; rate per bar
     entry  |d_t| >= delta (long the ratio below its mean, short above)
     exit   when the ratio crosses back through its mean
-theta = (which mean, delta, number of pairs, capital rule); the same theta space and
-optimiser are given to every competing criterion.
+theta = (which mean, delta, number of pairs); capital is rank-weighted across the
+pairs with an open position (Eq. 8).  The same theta space and optimiser are given
+to every competing criterion.
 """
 from __future__ import annotations
 
@@ -46,7 +47,8 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 CRITERIA = ["MCRmag", "MCR", "Cointegration", "Distance", "Correlation", "HalfLife"]
 SPACE = dict(mean=["FIX", 12, 24, 48, 96, 168, 336],
              delta=[0.005, 0.0075, 0.01, 0.015, 0.02, 0.03, 0.04, 0.06],
-             n_pairs=[3, 5, 8, 10], weighting=["equal", "active"])
+             n_pairs=[3, 5, 8, 10])
+WEIGHTING = "active"   # rank-weighted across pairs with an open position (paper Eq. 8)
 CALIB, MIN_CALIB, REOPT, TRIALS, TOP_K = 8, 3, 3, 30, 100
 SEED = C.SEED
 OUT = Path("results/wfo")
@@ -56,7 +58,7 @@ def to_spec(th: dict, criterion: str) -> Spec:
     fix = th["mean"] == "FIX"
     return Spec(criterion=criterion, signal="RATIO_FIX" if fix else "RATIO_MA",
                 window=140 if fix else int(th["mean"]), entry=th["delta"], exit=0.0,
-                n_pairs=th["n_pairs"], max_uses=1, top_k=TOP_K, weighting=th["weighting"],
+                n_pairs=th["n_pairs"], max_uses=1, top_k=TOP_K, weighting=WEIGHTING,
                 params={"delta": th["delta"]})
 
 
@@ -121,6 +123,7 @@ def run(ds_name: str) -> None:
     pd.DataFrame(chosen).to_csv(out / "params.csv", index=False)
     json.dump(dict(dataset=ds_name, calib=CALIB, min_calib=MIN_CALIB, reopt=REOPT,
                    trials=TRIALS, top_k=TOP_K, cost_bps=ds.cost_bps, funding=use_fund,
+                   weighting=WEIGHTING,
                    borrow_pa=0.0 if use_fund else ds.borrow_pa, space=SPACE,
                    seconds=time.time() - t0), open(out / "design.json", "w"), indent=1,
               default=str)

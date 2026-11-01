@@ -56,7 +56,7 @@ def one(ds: str):
     prm = pd.read_csv(d / "params.csv")
     prm = prm[prm.criterion == "MCRmag"]
     choice = {k: prm[k].astype(str).value_counts(normalize=True).round(2).head(3).to_dict()
-              for k in ("mean", "delta", "n_pairs", "weighting")}
+              for k in ("mean", "delta", "n_pairs")}
     return pd.DataFrame(rows), dm, pd.DataFrame(yearly), choice
 
 
