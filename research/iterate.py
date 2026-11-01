@@ -81,7 +81,7 @@ def run_batch(name: str, specs: dict, venues=VENUES, workers=3):
     lp = OUT / "log.csv"
     df.to_csv(lp, mode="a", header=not lp.exists(), index=False)
     piv = df.pivot_table(index="design", columns="venue", values="sharpe")
-    piv["mean"] = piv.mean(1); piv["min"] = piv[venues].min(1)
+    piv["mean"] = piv.mean(axis=1); piv["min"] = piv[venues].min(axis=1)
     print(piv.sort_values("mean", ascending=False).round(2).to_string(), flush=True)
     pd.to_pickle(nets, OUT / f"nets_{name}.pkl")
     return df
@@ -127,7 +127,20 @@ def batch_it3():
     return specs
 
 
+def batch_it4():
+    """Short horizons: 6-16 bars, bands 2.0/2.5, 5 or 10 pairs; MCR vs half-life vs coint."""
+    specs = {}
+    for c, w, e, n in itertools.product(["MCR", "HalfLife", "Cointegration"], [6, 8, 12, 16],
+                                        [2.0, 2.5], [5, 10]):
+        specs[f"{c}|w{w}|e{e}|n{n}"] = Spec(
+            criterion=c, signal="LEVEL", window=w, entry=e, exit=0.0, n_pairs=n, max_uses=1,
+            top_k=100, weighting="rank")
+    return specs
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 3
-    run_batch(name, globals()[f"batch_{name}"](), workers=workers)
+    venues = sys.argv[3].split(",") if len(sys.argv) > 3 else VENUES
+    tag = name if len(sys.argv) <= 3 else f"{name}_{'_'.join(venues)}"
+    run_batch(tag, globals()[f"batch_{name}"](), venues=venues, workers=workers)
