@@ -249,12 +249,13 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
 
 def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool):
     """Select pairs on the formation window and trade them over the trading window.
-    Returns (net return per trading bar, gross sum, turnover sum)."""
+    Returns per-bar arrays (net return, gross return, turnover)."""
     te = slice(f["train"], len(f["idx"]))
     sc = scores(f, sp, kappa)
     chosen = select(sc, f["ia"], f["ib"], sp.n_pairs, sp.max_uses)
     if len(chosen) == 0:
-        return np.zeros(te.stop - te.start), 0.0, 0.0
+        z0 = np.zeros(te.stop - te.start)
+        return z0, z0, z0
     zc = _zcache(f, sp.signal, sp.window)
     z = zc["z"][:, chosen]
     allow = None
@@ -273,7 +274,7 @@ def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool)
         fa, fb = f["fund"][te][:, ia], f["fund"][te][:, ib]
     res = portfolio(pos, r[:, ia], r[:, ib], a, b, sc[chosen], sp.weighting, borrow_bar, fa, fb)
     n = res["gross"] - kappa * res["turn"] - res["borrow"]
-    return n, float(res["gross"].sum()), float(res["turn"].sum())
+    return n, res["gross"], res["turn"]
 
 
 def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: bool = True,
@@ -292,7 +293,7 @@ def evaluate(ds_name: str, sp: Spec, cost_bps: float | None = None, funding: boo
         elif period == "holdout":
             assert f["idx"][te][0] >= HOLDOUT_START
         n, g, u = run_fold(f, sp, kappa, borrow_bar, use_fund)
-        nets.append(pd.Series(n, index=f["idx"][te])); gross.append(g); turn.append(u)
+        nets.append(pd.Series(n, index=f["idx"][te])); gross.append(g.sum()); turn.append(u.sum())
     net = pd.concat(nets).sort_index()
     bpy = ds.bars_per_year * (C.TEST_BARS / test if False else 1)
     dly = net.groupby(net.index.floor("D")).sum()

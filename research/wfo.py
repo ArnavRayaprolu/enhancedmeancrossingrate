@@ -79,6 +79,8 @@ def run(ds_name: str) -> None:
     past: deque = deque(maxlen=CALIB)           # previous folds (with their caches)
     best = {c: None for c in CRITERIA}
     nets = {c: [] for c in CRITERIA}
+    grs = {c: [] for c in CRITERIA}
+    tns = {c: [] for c in CRITERIA}
     chosen = []
     for k, f in enumerate(make_folds(len(close))):
         fd = build_fold(close, dvol, meta, ds, f, C.TRAIN_BARS, fund)
@@ -105,13 +107,17 @@ def run(ds_name: str) -> None:
                                        calib_sharpe=study.best_value, **study.best_params))
                 n, g, u = run_fold(fd, to_spec(best[c], c), kappa, borrow_bar, use_fund)
                 nets[c].append(pd.Series(n, index=te_idx))
+                grs[c].append(pd.Series(g, index=te_idx))
+                tns[c].append(pd.Series(u, index=te_idx))
         past.append(fd)
         print(f"[{ds_name}] fold {fd['fold']:>4} {str(te_idx[0])[:10]} "
               f"coins={len(fd['names'])} {time.time() - t0:6.0f}s", flush=True)
 
     out = OUT / ds_name
     out.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame({c: pd.concat(v) for c, v in nets.items() if v}).to_parquet(out / "net.parquet")
+    for nm, dct in (("net", nets), ("gross", grs), ("turn", tns)):
+        pd.DataFrame({c: pd.concat(v) for c, v in dct.items() if v}).to_parquet(
+            out / f"{nm}.parquet")
     pd.DataFrame(chosen).to_csv(out / "params.csv", index=False)
     json.dump(dict(dataset=ds_name, calib=CALIB, min_calib=MIN_CALIB, reopt=REOPT,
                    trials=TRIALS, top_k=TOP_K, cost_bps=ds.cost_bps, funding=use_fund,
