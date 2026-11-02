@@ -131,6 +131,8 @@ def stage_assets():
         js = get(f"{TRADE}/assets", dict(status=status, asset_class="us_equity"))
         rows += js
     a = pd.DataFrame(rows)
+    print(f"assets returned: {len(a)}; symbols listed more than once: "
+          f"{int(a['symbol'].duplicated().sum())}", flush=True)
     a = a[a["exchange"].isin(["NYSE", "NASDAQ", "AMEX", "ARCA", "BATS"])]
     a = a[a["symbol"].astype(str).str.match(TICKER)]
     a["instrument_ok"] = ~a["name"].fillna("").str.contains(EXCLUDE.pattern, flags=re.I, regex=True) & (a["exchange"] != "ARCA")
@@ -178,7 +180,9 @@ def stage_select():
     rk["superset"] = rk["best_rank"] <= TOP_PER_YEAR
     rk.index.name = "symbol"
     rk.to_csv(OUT / "universe.csv")
-    a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str}).set_index("symbol")
+    a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str})
+    # a symbol can be listed twice (an inactive old issuer and an active new one)
+    a = a.sort_values("status").drop_duplicates("symbol").set_index("symbol")
     sel = rk.index[rk.superset]
     print(f"superset: {len(sel)} symbols; of which inactive (delisted) now: "
           f"{int((a.reindex(sel)['status'] == 'inactive').sum())}", flush=True)

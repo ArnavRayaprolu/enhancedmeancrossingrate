@@ -1,3 +1,4 @@
 run 1 2026-11-02T15:22:26Z: stages=all
 run 2 2026-11-02T15:24:46Z: fix NA ticker parsing
 run 3 2026-11-02T15:26:49Z: skip non-ticker identifiers
+run 4 2026-11-02T16:01:42Z: dedupe assets, commit partial work
