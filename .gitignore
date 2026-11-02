@@ -13,4 +13,3 @@ results/cache/
 results/mirror_perp_1h/
 results/dev_search/log.csv
 results/iterations/*.pkl
-data/kaggle_hourly_prepared.pkl
