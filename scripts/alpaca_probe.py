@@ -4,6 +4,8 @@ import time
 
 import requests
 
+time.sleep(70)   # let the per-minute rate window reset
+
 S = requests.Session()
 S.headers.update({"APCA-API-KEY-ID": os.environ["ALPACA_KEY_ID"],
                   "APCA-API-SECRET-KEY": os.environ["ALPACA_SECRET_KEY"]})
@@ -13,13 +15,17 @@ SYMS = ("AAPL MSFT AMZN GOOGL META NVDA JPM XOM JNJ PG KO PEP WMT HD BAC CVX MRK
         "GS MS C WFC AXP BLK SPGI MCO ICE CME").split()
 
 
-def probe(label, symbols, start, end, timeframe="1Hour", feed="sip", pages=3, limit=10000):
+def probe(label, symbols, start, end, timeframe="1Hour", feed="sip", pages=4, limit=10000):
     p = dict(symbols=",".join(symbols), timeframe=timeframe, start=start, end=end,
              limit=limit, adjustment="all", feed=feed, sort="asc")
     tot = 0
     for i in range(pages):
+        time.sleep(1.0)
         t = time.time()
         r = S.get(URL, params=p, timeout=120)
+        if r.status_code == 429:
+            print("429 -> waiting 65 s", flush=True); time.sleep(65)
+            t = time.time(); r = S.get(URL, params=p, timeout=120)
         dt = time.time() - t
         js = r.json() if r.status_code == 200 else {}
         n = sum(len(v) for v in (js.get("bars") or {}).values())
@@ -43,3 +49,4 @@ probe("50 sym 1Hour 2019 iex", SYMS, "2019-01-01T00:00:00Z", "2020-01-01T00:00:0
 probe("50 sym 1Hour 2024 only", SYMS, "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
 probe("50 sym 1Day 2016-2026", SYMS, "2016-01-01T00:00:00Z", "2026-10-31T00:00:00Z")
 probe("1 sym 1Hour 2019 limit1000", ["AAPL"], "2019-01-01T00:00:00Z", "2020-01-01T00:00:00Z", limit=1000)
+probe("1 sym 1Hour 2019 page_limit", ["AAPL"], "2019-01-01T00:00:00Z", "2020-01-01T00:00:00Z", pages=30)
