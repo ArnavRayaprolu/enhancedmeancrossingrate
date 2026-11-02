@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 OUT = Path(__file__).resolve().parents[1] / "data" / "kaggle_hourly"
-FIELDS = ["open", "high", "low", "close", "volume"]
+FIELDS = ["open", "high", "low", "close", "adjusted_close", "volume"]
 TIME_COLS = ["datetime", "date", "time", "timestamp", "date_time", "index", "unnamed: 0"]
 TICKER_COLS = ["ticker", "symbol", "name", "stock"]
 MAX_COLS_PER_FILE = 400
@@ -65,6 +65,7 @@ def normalise(df: pd.DataFrame, stem: str) -> dict[str, pd.DataFrame]:
             continue
         x = g.set_index("_ts")[cols].apply(pd.to_numeric, errors="coerce")
         x = x[~x.index.duplicated(keep="last")].sort_index()
+        x.attrs["name"] = str(g["name"].iloc[0]) if "name" in g.columns else ""
         out[str(tk).upper().strip()] = x
     return out
 
@@ -106,10 +107,13 @@ def main() -> None:
             # folder name is often the interval or exchange; keep the file stem as ticker
             for tk, x in normalise(d, p.stem).items():
                 if tk in frames:
+                    nm = x.attrs.get("name", "")
                     x = pd.concat([frames[tk], x])
+                    x.attrs["name"] = nm
                     x = x[~x.index.duplicated(keep="last")].sort_index()
                 frames[tk] = x
-                meta.append(dict(ticker=tk, file=str(p.relative_to(path))))
+                meta.append(dict(ticker=tk, file=str(p.relative_to(path)),
+                                 name=x.attrs.get("name", "")))
         log(f"\ntickers parsed: {len(frames)}", fh)
         if not frames:
             sys.exit("no price data recognised; see manifest.txt")
