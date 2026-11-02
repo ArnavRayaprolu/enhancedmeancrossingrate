@@ -194,7 +194,7 @@ def stage_hourly(k: int, n: int):
     rk["superset"] = rk["superset"].astype(str) == "True"
     syms = sorted(rk.index[rk.superset].astype(str))
     syms = syms[k::n]
-    out = OUT / "hourly" / f"c{k}"
+    out = OUT / "hourly" / (f"c{k}" if n == 3 else f"n{n}c{k}")
     if list(out.glob("close_*.parquet")):
         print(f"chunk {k} already downloaded; skipping", flush=True)
         return

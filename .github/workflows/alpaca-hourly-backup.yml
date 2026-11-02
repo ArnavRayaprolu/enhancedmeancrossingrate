@@ -1,0 +1,48 @@
+name: alpaca-hourly-backup
+
+# Backup for hourly chunk 0 of 3: the same symbols as three parts of 9 (0, 3, 6).
+# them one after another; requests are latency-bound, not rate-bound).
+
+on:
+  push:
+    paths:
+      - .github/alpaca-backup-run.txt
+
+permissions:
+  contents: write
+
+concurrency:
+  group: alpaca-hourly-backup-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+jobs:
+  hourly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [0, 3, 6]
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pandas numpy pyarrow requests
+      - run: python scripts/download_alpaca.py hourly ${{ matrix.chunk }} 9
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          git add -f data/alpaca/hourly/n9c${{ matrix.chunk }}
+          git diff --cached --quiet && exit 0
+          git commit -m "data: alpaca hourly bars, backup part ${{ matrix.chunk }} of 9 (GitHub Actions)"
+          for i in 1 2 3 4 5 6; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep $((i * 10))
+          done
+          exit 1

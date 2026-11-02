@@ -38,11 +38,13 @@ FIELDS = ("open", "high", "low", "close", "volume")
 
 def _panel(field: str) -> pd.DataFrame:
     cols = []
-    for c in sorted((DATA / "hourly").glob("c*")):
+    for c in sorted(p for p in (DATA / "hourly").iterdir() if p.is_dir()):
         parts = sorted(c.glob(f"{field}_*.parquet"))
         if parts:
             cols.append(pd.concat([pd.read_parquet(p) for p in parts], axis=0))
     df = pd.concat(cols, axis=1).sort_index()
+    # a backup download can repeat symbols of another chunk: keep the first copy
+    df = df.loc[:, ~df.columns.duplicated()]
     df.index = pd.DatetimeIndex(df.index)
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC")
