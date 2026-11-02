@@ -359,18 +359,18 @@ columns=['ticker', 'name', 'date', 'open', 'high', 'low', 'close', 'adjusted clo
 2914   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-12-30 17:00:00-05:00  1.04  1.04  1.04   1.04            1.04       0
 
 tickers parsed: 7753
-              file                             first                              last         rows
-count         7753                              7753                              7753  7753.000000
-unique        7753                               NaN                               NaN          NaN
-top     2021/A.csv                               NaN                               NaN          NaN
-freq             1                               NaN                               NaN          NaN
-mean           NaN  2021-02-26 00:59:36.783180+00:00  2021-12-27 23:19:40.575261+00:00  1937.633819
-min            NaN         2021-01-01 14:30:00+00:00         2021-07-16 20:00:00+00:00     1.000000
-25%            NaN         2021-01-04 13:00:00+00:00         2021-12-30 20:30:00+00:00  1009.000000
-50%            NaN         2021-01-04 14:30:00+00:00         2021-12-30 21:00:00+00:00  2118.000000
-75%            NaN         2021-03-02 14:30:00+00:00         2021-12-30 22:00:00+00:00  2629.000000
-max            NaN         2021-12-30 14:30:00+00:00         2021-12-30 22:00:00+00:00  4075.000000
-std            NaN                               NaN                               NaN  1086.391607
+              file                                     name                             first                              last         rows
+count         7753                                     7753                              7753                              7753  7753.000000
+unique        7753                                     7748                               NaN                               NaN          NaN
+top     2021/A.csv  MFS Municipal Income Trust Common Stock                               NaN                               NaN          NaN
+freq             1                                        2                               NaN                               NaN          NaN
+mean           NaN                                      NaN  2021-02-26 00:59:36.783180+00:00  2021-12-27 23:19:40.575261+00:00  1937.633819
+min            NaN                                      NaN         2021-01-01 14:30:00+00:00         2021-07-16 20:00:00+00:00     1.000000
+25%            NaN                                      NaN         2021-01-04 13:00:00+00:00         2021-12-30 20:30:00+00:00  1009.000000
+50%            NaN                                      NaN         2021-01-04 14:30:00+00:00         2021-12-30 21:00:00+00:00  2118.000000
+75%            NaN                                      NaN         2021-03-02 14:30:00+00:00         2021-12-30 22:00:00+00:00  2629.000000
+max            NaN                                      NaN         2021-12-30 14:30:00+00:00         2021-12-30 22:00:00+00:00  4075.000000
+std            NaN                                      NaN                               NaN                               NaN  1086.391607
 wrote open_000.parquet (4167, 400) 2.6 MB
 wrote open_001.parquet (4167, 400) 2.7 MB
 wrote open_002.parquet (4167, 400) 2.5 MB
@@ -451,6 +451,26 @@ wrote close_016.parquet (4167, 400) 2.6 MB
 wrote close_017.parquet (4167, 400) 2.8 MB
 wrote close_018.parquet (4167, 400) 2.6 MB
 wrote close_019.parquet (4167, 153) 1.1 MB
+wrote adjusted_close_000.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_001.parquet (4167, 400) 2.7 MB
+wrote adjusted_close_002.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_003.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_004.parquet (4167, 400) 2.7 MB
+wrote adjusted_close_005.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_006.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_007.parquet (4167, 400) 2.3 MB
+wrote adjusted_close_008.parquet (4167, 400) 2.4 MB
+wrote adjusted_close_009.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_010.parquet (4167, 400) 2.5 MB
+wrote adjusted_close_011.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_012.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_013.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_014.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_015.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_016.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_017.parquet (4167, 400) 2.8 MB
+wrote adjusted_close_018.parquet (4167, 400) 2.6 MB
+wrote adjusted_close_019.parquet (4167, 153) 1.1 MB
 wrote volume_000.parquet (4167, 400) 2.8 MB
 wrote volume_001.parquet (4167, 400) 2.8 MB
 wrote volume_002.parquet (4167, 400) 2.7 MB
