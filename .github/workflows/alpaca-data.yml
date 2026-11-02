@@ -1,0 +1,82 @@
+name: alpaca-data
+
+# Downloads 10 years of split+dividend adjusted US equity bars from Alpaca
+# Market Data (free plan, SIP feed) and commits them to data/alpaca/.
+# Requires repository secrets ALPACA_KEY_ID and ALPACA_SECRET_KEY
+# (Settings -> Secrets and variables -> Actions). Run from the Actions tab.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "prep = assets+daily+select; hourly = 30-min bars; all = both"
+        default: all
+
+permissions:
+  contents: write
+
+concurrency:
+  group: alpaca-data-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+jobs:
+  prep:
+    if: inputs.stages != 'hourly'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pandas numpy pyarrow requests
+      - run: python scripts/download_alpaca.py assets
+      - run: python scripts/download_alpaca.py daily
+      - run: python scripts/download_alpaca.py select
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          git add -f data/alpaca
+          git diff --cached --quiet && exit 0
+          git commit -m "data: alpaca assets, daily bars, liquid universe (GitHub Actions)"
+          for i in 1 2 3 4 5 6; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep $((i * 10))
+          done
+          exit 1
+
+  hourly:
+    needs: prep
+    if: always() && (needs.prep.result == 'success' || needs.prep.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 1            # one account-wide rate limit
+      matrix:
+        chunk: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - run: git pull origin "${{ github.ref_name }}"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pandas numpy pyarrow requests
+      - run: python scripts/download_alpaca.py hourly ${{ matrix.chunk }} 6
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          git add -f data/alpaca/hourly/c${{ matrix.chunk }}
+          git diff --cached --quiet && exit 0
+          git commit -m "data: alpaca hourly bars, chunk ${{ matrix.chunk }} (GitHub Actions)"
+          for i in 1 2 3 4 5 6; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep $((i * 10))
+          done
+          exit 1
