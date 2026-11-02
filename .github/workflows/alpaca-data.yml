@@ -6,6 +6,9 @@ name: alpaca-data
 # (Settings -> Secrets and variables -> Actions). Run from the Actions tab.
 
 on:
+  push:
+    paths:
+      - .github/alpaca-run.txt     # edit this file to start a download on this branch
   workflow_dispatch:
     inputs:
       stages:
