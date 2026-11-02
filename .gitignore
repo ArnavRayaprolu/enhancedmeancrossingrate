@@ -8,6 +8,7 @@ paper/*.fls
 paper/*.fdb_latexmk
 paper/*.synctex.gz
 data/_mirror/
+archive/v4/results/cache/
 results/cache/
 results/mirror_perp_1h/
 results/dev_search/log.csv
