@@ -1,0 +1,473 @@
+dataset root: /home/runner/.cache/kagglehub/datasets/leukipp/hourly-stock-prices/versions/1
+files: 7753  total size: 2288.5 MB
+  2021/A.csv  435 kB
+  2021/AA.csv  502 kB
+  2021/AAC.csv  265 kB
+  2021/AACG.csv  555 kB
+  2021/AACI.csv  21 kB
+  2021/AACIU.csv  30 kB
+  2021/AACIW.csv  15 kB
+  2021/AADI.csv  138 kB
+  2021/AAIC.csv  380 kB
+  2021/AAIN.csv  90 kB
+  2021/AAL.csv  572 kB
+  2021/AAMC.csv  192 kB
+  2021/AAME.csv  391 kB
+  2021/AAN.csv  371 kB
+  2021/AAOI.csv  393 kB
+  2021/AAON.csv  310 kB
+  2021/AAP.csv  364 kB
+  2021/AAPL.csv  513 kB
+  2021/AAQC.csv  130 kB
+  2021/AAT.csv  340 kB
+  2021/AATC.csv  155 kB
+  2021/AAU.csv  490 kB
+  2021/AAWW.csv  390 kB
+  2021/AB.csv  401 kB
+  2021/ABB.csv  427 kB
+  2021/ABBV.csv  498 kB
+  2021/ABC.csv  381 kB
+  2021/ABCB.csv  328 kB
+  2021/ABCL.csv  517 kB
+  2021/ABCM.csv  365 kB
+  2021/ABEO.csv  497 kB
+  2021/ABEV.csv  590 kB
+  2021/ABG.csv  357 kB
+  2021/ABGI.csv  142 kB
+  2021/ABIO.csv  445 kB
+  2021/ABM.csv  352 kB
+  2021/ABMD.csv  346 kB
+  2021/ABNB.csv  544 kB
+  2021/ABOS.csv  175 kB
+  2021/ABR.csv  438 kB
+  2021/ABSI.csv  151 kB
+  2021/ABST.csv  348 kB
+  2021/ABT.csv  494 kB
+  2021/ABTX.csv  334 kB
+  2021/ABUS.csv  524 kB
+  2021/ABVC.csv  232 kB
+  2021/AC.csv  263 kB
+  2021/ACA.csv  308 kB
+  2021/ACAD.csv  466 kB
+  2021/ACAH.csv  73 kB
+  2021/ACAHU.csv  116 kB
+  2021/ACAQ.csv  4 kB
+  2021/ACB.csv  518 kB
+  2021/ACBA.csv  23 kB
+  2021/ACBAU.csv  23 kB
+  2021/ACBAW.csv  61 kB
+  2021/ACC.csv  362 kB
+  2021/ACCD.csv  350 kB
+  2021/ACCO.csv  348 kB
+  2021/ACEL.csv  315 kB
+  2021/ACER.csv  427 kB
+  2021/ACET.csv  330 kB
+  2021/ACEV.csv  485 kB
+  2021/ACEVU.csv  101 kB
+  2021/ACEVW.csv  270 kB
+  2021/ACGL.csv  362 kB
+  2021/ACGLN.csv  269 kB
+  2021/ACGLO.csv  471 kB
+  2021/ACH.csv  495 kB
+  2021/ACHC.csv  358 kB
+  2021/ACHL.csv  287 kB
+  2021/ACHR.csv  150 kB
+  2021/ACHV.csv  403 kB
+  2021/ACI.csv  468 kB
+  2021/ACII.csv  175 kB
+  2021/ACIU.csv  383 kB
+  2021/ACIW.csv  346 kB
+  2021/ACKIT.csv  104 kB
+  2021/ACKIU.csv  120 kB
+  2021/ACKIW.csv  136 kB
+  2021/ACLS.csv  400 kB
+  2021/ACM.csv  321 kB
+  2021/ACMR.csv  404 kB
+  2021/ACN.csv  483 kB
+  2021/ACNB.csv  269 kB
+  2021/ACOR.csv  414 kB
+  2021/ACP.csv  411 kB
+  2021/ACQR.csv  70 kB
+  2021/ACQRU.csv  126 kB
+  2021/ACR.csv  300 kB
+  2021/ACRE.csv  426 kB
+  2021/ACRO.csv  49 kB
+  2021/ACRS.csv  380 kB
+  2021/ACRX.csv  497 kB
+  2021/ACST.csv  559 kB
+  2021/ACT.csv  95 kB
+  2021/ACTD.csv  106 kB
+  2021/ACTDU.csv  92 kB
+  2021/ACTDW.csv  46 kB
+  2021/ACTG.csv  384 kB
+  2021/ACU.csv  274 kB
+  2021/ACV.csv  413 kB
+  2021/ACVA.csv  279 kB
+  2021/ACXP.csv  204 kB
+  2021/ACY.csv  415 kB
+  2021/ADAG.csv  319 kB
+  2021/ADAL.csv  0 kB
+  2021/ADALU.csv  20 kB
+  2021/ADALW.csv  1 kB
+  2021/ADAP.csv  464 kB
+  2021/ADBE.csv  489 kB
+  2021/ADC.csv  353 kB
+  2021/ADCT.csv  339 kB
+  2021/ADER.csv  182 kB
+  2021/ADERU.csv  161 kB
+  2021/ADERW.csv  142 kB
+  2021/ADES.csv  384 kB
+  2021/ADEX.csv  163 kB
+  2021/ADGI.csv  169 kB
+  2021/ADI.csv  465 kB
+  2021/ADIL.csv  410 kB
+  2021/ADILW.csv  48 kB
+  2021/ADM.csv  489 kB
+  2021/ADMA.csv  488 kB
+  2021/ADMP.csv  576 kB
+  2021/ADN.csv  425 kB
+  2021/ADNT.csv  337 kB
+  2021/ADNWW.csv  268 kB
+  2021/ADOC.csv  135 kB
+  2021/ADOCR.csv  91 kB
+  2021/ADOCW.csv  181 kB
+  2021/ADP.csv  464 kB
+  2021/ADPT.csv  442 kB
+  2021/ADRA.csv  102 kB
+  2021/ADS.csv  418 kB
+  2021/ADSE.csv  7 kB
+  2021/ADSEW.csv  5 kB
+  2021/ADSK.csv  467 kB
+  2021/ADT.csv  447 kB
+  2021/ADTH.csv  9 kB
+  2021/ADTHW.csv  6 kB
+  2021/ADTN.csv  334 kB
+  2021/ADTX.csv  443 kB
+  2021/ADUS.csv  339 kB
+  2021/ADV.csv  355 kB
+  2021/ADVM.csv  459 kB
+  2021/ADVWW.csv  150 kB
+  2021/ADX.csv  326 kB
+  2021/ADXN.csv  235 kB
+  2021/AE.csv  266 kB
+  2021/AEAC.csv  134 kB
+  2021/AEACU.csv  145 kB
+  2021/AEACW.csv  127 kB
+  2021/AEAE.csv  6 kB
+  2021/AEAEU.csv  21 kB
+  2021/AEAEW.csv  9 kB
+  2021/AEE.csv  341 kB
+  2021/AEF.csv  339 kB
+  2021/AEFC.csv  188 kB
+  2021/AEG.csv  371 kB
+  2021/AEHA.csv  8 kB
+  2021/AEHAU.csv  11 kB
+  2021/AEHAW.csv  16 kB
+  2021/AEHL.csv  520 kB
+  2021/AEHR.csv  445 kB
+  2021/AEI.csv  494 kB
+  2021/AEIS.csv  378 kB
+  2021/AEL.csv  392 kB
+  2021/AEM.csv  430 kB
+  2021/AEMD.csv  463 kB
+  2021/AENZ.csv  295 kB
+  2021/AEO.csv  501 kB
+  2021/AEP.csv  479 kB
+  2021/AEPPZ.csv  259 kB
+  2021/AER.csv  356 kB
+  2021/AERC.csv  52 kB
+  2021/AERI.csv  377 kB
+  2021/AES.csv  405 kB
+  2021/AESC.csv  204 kB
+  2021/AESE.csv  534 kB
+  2021/AEVA.csv  370 kB
+  2021/AEY.csv  369 kB
+  2021/AEYE.csv  347 kB
+  2021/AEZS.csv  519 kB
+  2021/AFACU.csv  15 kB
+  2021/AFAQ.csv  43 kB
+  2021/AFAQU.csv  48 kB
+  2021/AFAQW.csv  34 kB
+  2021/AFB.csv  342 kB
+  2021/AFBI.csv  181 kB
+  2021/AFCG.csv  254 kB
+  2021/AFG.csv  376 kB
+  2021/AFGB.csv  292 kB
+  2021/AFGC.csv  263 kB
+  2021/AFGD.csv  288 kB
+  2021/AFGE.csv  163 kB
+  2021/AFI.csv  351 kB
+  2021/AFIB.csv  363 kB
+  2021/AFL.csv  398 kB
+  2021/AFMD.csv  392 kB
+  2021/AFRM.csv  548 kB
+  2021/AFT.csv  344 kB
+  2021/AFTR.csv  46 kB
+  2021/AFYA.csv  322 kB
+  2021/AG.csv  567 kB
+  2021/AGAC.csv  195 kB
+  2021/AGBA.csv  107 kB
+  2021/AGBAR.csv  275 kB
+  2021/AGBAU.csv  4 kB
+  2021/AGBAW.csv  68 kB
+  2021/AGCB.csv  383 kB
+  2021/AGCO.csv  374 kB
+  2021/AGD.csv  309 kB
+  2021/AGE.csv  393 kB
+  2021/AGEN.csv  428 kB
+  2021/AGFS.csv  358 kB
+  2021/AGFY.csv  402 kB
+  2021/AGGR.csv  57 kB
+  2021/AGGRU.csv  58 kB
+  2021/AGI.csv  472 kB
+  2021/AGIL.csv  143 kB
+  2021/AGILW.csv  38 kB
+  2021/AGIO.csv  357 kB
+  2021/AGL.csv  230 kB
+  2021/AGLE.csv  347 kB
+  2021/AGM.csv  357 kB
+  2021/AGMH.csv  290 kB
+  2021/AGNC.csv  527 kB
+  2021/AGNCM.csv  385 kB
+  2021/AGNCN.csv  520 kB
+  2021/AGNCO.csv  519 kB
+  2021/AGNCP.csv  560 kB
+  2021/AGO.csv  332 kB
+  2021/AGR.csv  310 kB
+  2021/AGRI.csv  258 kB
+  2021/AGRIW.csv  62 kB
+  2021/AGRO.csv  319 kB
+  2021/AGRX.csv  468 kB
+  2021/AGS.csv  322 kB
+  2021/AGTC.csv  547 kB
+  2021/AGTI.csv  223 kB
+  2021/AGX.csv  297 kB
+  2021/AGYS.csv  316 kB
+  2021/AHCO.csv  354 kB
+  2021/AHG.csv  16 kB
+  2021/AHH.csv  352 kB
+  2021/AHI.csv  61 kB
+  2021/AHPA.csv  17 kB
+  2021/AHPAU.csv  26 kB
+  2021/AHPAW.csv  15 kB
+  2021/AHPI.csv  482 kB
+  2021/AHRNU.csv  8 kB
+  2021/AHT.csv  544 kB
+  2021/AI.csv  509 kB
+  2021/AIC.csv  106 kB
+  2021/AIF.csv  330 kB
+  2021/AIG.csv  477 kB
+  2021/AIH.csv  439 kB
+  2021/AIHS.csv  491 kB
+  2021/AIKI.csv  499 kB
+  2021/AIM.csv  436 kB
+  2021/AIMC.csv  354 kB
+  2021/AIN.csv  340 kB
+  2021/AINC.csv  302 kB
+  2021/AINV.csv  391 kB
+  2021/AIO.csv  421 kB
+  2021/AIP.csv  64 kB
+  2021/AIR.csv  315 kB
+  2021/AIRC.csv  349 kB
+  2021/AIRG.csv  333 kB
+  2021/AIRI.csv  448 kB
+  2021/AIRS.csv  68 kB
+  2021/AIRT.csv  219 kB
+  2021/AIRTP.csv  118 kB
+  2021/AIT.csv  356 kB
+  2021/AIV.csv  529 kB
+  2021/AIZ.csv  331 kB
+  2021/AIZN.csv  274 kB
+  2021/AJG.csv  365 kB
+  2021/AJRD.csv  395 kB
+  2021/AJX.csv  316 kB
+  2021/AJXA.csv  176 kB
+  2021/AKA.csv  99 kB
+  2021/AKAM.csv  445 kB
+  2021/AKBA.csv  477 kB
+  2021/AKIC.csv  96 kB
+  2021/AKICU.csv  120 kB
+  2021/AKICW.csv  61 kB
+  2021/AKR.csv  324 kB
+  2021/AKRO.csv  353 kB
+  2021/AKTS.csv  416 kB
+  2021/AKTX.csv  403 kB
+  2021/AKU.csv  283 kB
+  2021/AKUS.csv  322 kB
+  2021/AKYA.csv  234 kB
+  2021/AL.csv  365 kB
+  2021/ALAC.csv  285 kB
+  2021/ALACR.csv  209 kB
+  2021/ALACU.csv  1 kB
+  2021/ALACW.csv  148 kB
+  ... 7453 more files
+
+== 2021/A.csv  shape=(3006, 9)
+columns=['ticker', 'name', 'date', 'open', 'high', 'low', 'close', 'adjusted close', 'volume']
+  ticker                                     name                       date        open        high         low       close  adjusted close  volume
+0      A  Agilent Technologies, Inc. Common Stock  2021-01-04 09:30:00-05:00  119.010002  120.089996  118.800003  120.019997      120.019997       0
+1      A  Agilent Technologies, Inc. Common Stock  2021-01-04 10:30:00-05:00  120.019997  120.029999  118.410004  118.860001      118.860001  341376
+2      A  Agilent Technologies, Inc. Common Stock  2021-01-04 11:30:00-05:00  118.839996  118.867996  117.269997  117.570000      117.570000  108887
+3      A  Agilent Technologies, Inc. Common Stock  2021-01-04 12:30:00-05:00  117.500000  118.260002  117.110001  118.099998      118.099998   90501
+4      A  Agilent Technologies, Inc. Common Stock  2021-01-04 13:30:00-05:00  118.120003  118.169998  117.750000  118.000000      118.000000  114713
+...
+     ticker                                     name                       date        open        high         low       close  adjusted close  volume
+3003      A  Agilent Technologies, Inc. Common Stock  2021-12-30 14:30:00-05:00  161.649994  161.970001  161.440903  161.630005      161.630005   91794
+3004      A  Agilent Technologies, Inc. Common Stock  2021-12-30 15:30:00-05:00  161.639999  161.660004  160.600006  160.809998      160.809998  195926
+3005      A  Agilent Technologies, Inc. Common Stock  2021-12-30 16:00:00-05:00  160.910000  160.910000  154.310000  160.880000      160.880000       0
+
+== 2021/AA.csv  shape=(3983, 9)
+columns=['ticker', 'name', 'date', 'open', 'high', 'low', 'close', 'adjusted close', 'volume']
+  ticker                             name                       date   open   high    low  close  adjusted close  volume
+0     AA  Alcoa Corporation Common Stock   2021-01-04 04:00:00-05:00  23.65  23.65  23.50  23.50           23.50       0
+1     AA  Alcoa Corporation Common Stock   2021-01-04 05:00:00-05:00  23.50  23.50  23.50  23.50           23.50       0
+2     AA  Alcoa Corporation Common Stock   2021-01-04 07:00:00-05:00  23.50  23.60  23.50  23.50           23.50       0
+3     AA  Alcoa Corporation Common Stock   2021-01-04 08:00:00-05:00  23.50  23.57  23.42  23.55           23.55       0
+4     AA  Alcoa Corporation Common Stock   2021-01-04 09:00:00-05:00  23.52  23.73  23.52  23.67           23.67       0
+...
+     ticker                             name                       date    open       high        low      close  adjusted close  volume
+3980     AA  Alcoa Corporation Common Stock   2021-12-30 15:30:00-05:00  59.305  59.450001  59.200001  59.220001       59.220001  472420
+3981     AA  Alcoa Corporation Common Stock   2021-12-30 16:00:00-05:00  59.210  59.480000  59.210000  59.290000       59.290000       0
+3982     AA  Alcoa Corporation Common Stock   2021-12-30 17:00:00-05:00  59.290  59.310000  59.280000  59.280000       59.280000       0
+
+== 2021/AAC.csv  shape=(1609, 9)
+columns=['ticker', 'name', 'date', 'open', 'high', 'low', 'close', 'adjusted close', 'volume']
+  ticker                                                  name                       date  open  high   low  close  adjusted close  volume
+0    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-03-25 09:30:00-04:00  9.95  9.95  9.52  9.570           9.570       0
+1    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-03-25 10:30:00-04:00  9.56  9.60  9.52  9.560           9.560   13420
+2    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-03-25 11:30:00-04:00  9.64  9.69  9.61  9.650           9.650   13004
+3    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-03-25 12:30:00-04:00  9.65  9.70  9.65  9.700           9.700    2921
+4    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-03-25 13:30:00-04:00  9.70  9.75  9.70  9.725           9.725    4775
+...
+     ticker                                                  name                       date  open  high   low  close  adjusted close  volume
+1606    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-12-30 14:30:00-05:00  9.74  9.75  9.73   9.74            9.74   47522
+1607    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-12-30 15:30:00-05:00  9.74  9.75  9.74   9.74            9.74    4189
+1608    AAC  Ares Acquisition Corporation Class A Ordinary Shares  2021-12-30 16:00:00-05:00  9.74  9.77  9.74   9.75            9.75       0
+
+== 2021/AACG.csv  shape=(2915, 9)
+columns=['ticker', 'name', 'date', 'open', 'high', 'low', 'close', 'adjusted close', 'volume']
+  ticker                                                                                     name                       date   open    high    low   close  adjusted close  volume
+0   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-01-04 09:30:00-05:00  1.170  1.1879  1.170  1.1700          1.1700       0
+1   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-01-04 10:30:00-05:00  1.170  1.2200  1.170  1.2200          1.2200   11217
+2   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-01-04 11:30:00-05:00  1.210  1.2200  1.170  1.1702          1.1702    1891
+3   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-01-04 14:30:00-05:00  1.195  1.1950  1.195  1.1950          1.1950     251
+4   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-01-04 16:00:00-05:00  1.180  1.1800  1.180  1.1800          1.1800       0
+...
+     ticker                                                                                     name                       date  open  high   low  close  adjusted close  volume
+2912   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-12-30 15:30:00-05:00  1.08  1.08  1.02   1.07            1.07   11057
+2913   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-12-30 16:00:00-05:00  1.04  1.04  1.04   1.04            1.04       0
+2914   AACG  ATA Creativity Global - American Depositary Shares, each representing two common shares  2021-12-30 17:00:00-05:00  1.04  1.04  1.04   1.04            1.04       0
+
+tickers parsed: 7753
+              file                             first                              last         rows
+count         7753                              7753                              7753  7753.000000
+unique        7753                               NaN                               NaN          NaN
+top     2021/A.csv                               NaN                               NaN          NaN
+freq             1                               NaN                               NaN          NaN
+mean           NaN  2021-02-26 00:59:36.783180+00:00  2021-12-27 23:19:40.575261+00:00  1937.633819
+min            NaN         2021-01-01 14:30:00+00:00         2021-07-16 20:00:00+00:00     1.000000
+25%            NaN         2021-01-04 13:00:00+00:00         2021-12-30 20:30:00+00:00  1009.000000
+50%            NaN         2021-01-04 14:30:00+00:00         2021-12-30 21:00:00+00:00  2118.000000
+75%            NaN         2021-03-02 14:30:00+00:00         2021-12-30 22:00:00+00:00  2629.000000
+max            NaN         2021-12-30 14:30:00+00:00         2021-12-30 22:00:00+00:00  4075.000000
+std            NaN                               NaN                               NaN  1086.391607
+wrote open_000.parquet (4167, 400) 2.6 MB
+wrote open_001.parquet (4167, 400) 2.7 MB
+wrote open_002.parquet (4167, 400) 2.5 MB
+wrote open_003.parquet (4167, 400) 2.5 MB
+wrote open_004.parquet (4167, 400) 2.7 MB
+wrote open_005.parquet (4167, 400) 2.5 MB
+wrote open_006.parquet (4167, 400) 2.5 MB
+wrote open_007.parquet (4167, 400) 2.3 MB
+wrote open_008.parquet (4167, 400) 2.4 MB
+wrote open_009.parquet (4167, 400) 2.5 MB
+wrote open_010.parquet (4167, 400) 2.5 MB
+wrote open_011.parquet (4167, 400) 2.6 MB
+wrote open_012.parquet (4167, 400) 2.6 MB
+wrote open_013.parquet (4167, 400) 2.6 MB
+wrote open_014.parquet (4167, 400) 2.6 MB
+wrote open_015.parquet (4167, 400) 2.6 MB
+wrote open_016.parquet (4167, 400) 2.6 MB
+wrote open_017.parquet (4167, 400) 2.8 MB
+wrote open_018.parquet (4167, 400) 2.6 MB
+wrote open_019.parquet (4167, 153) 1.1 MB
+wrote high_000.parquet (4167, 400) 2.6 MB
+wrote high_001.parquet (4167, 400) 2.6 MB
+wrote high_002.parquet (4167, 400) 2.4 MB
+wrote high_003.parquet (4167, 400) 2.4 MB
+wrote high_004.parquet (4167, 400) 2.6 MB
+wrote high_005.parquet (4167, 400) 2.4 MB
+wrote high_006.parquet (4167, 400) 2.4 MB
+wrote high_007.parquet (4167, 400) 2.3 MB
+wrote high_008.parquet (4167, 400) 2.4 MB
+wrote high_009.parquet (4167, 400) 2.5 MB
+wrote high_010.parquet (4167, 400) 2.5 MB
+wrote high_011.parquet (4167, 400) 2.5 MB
+wrote high_012.parquet (4167, 400) 2.5 MB
+wrote high_013.parquet (4167, 400) 2.5 MB
+wrote high_014.parquet (4167, 400) 2.5 MB
+wrote high_015.parquet (4167, 400) 2.5 MB
+wrote high_016.parquet (4167, 400) 2.5 MB
+wrote high_017.parquet (4167, 400) 2.7 MB
+wrote high_018.parquet (4167, 400) 2.6 MB
+wrote high_019.parquet (4167, 153) 1.1 MB
+wrote low_000.parquet (4167, 400) 2.6 MB
+wrote low_001.parquet (4167, 400) 2.6 MB
+wrote low_002.parquet (4167, 400) 2.4 MB
+wrote low_003.parquet (4167, 400) 2.4 MB
+wrote low_004.parquet (4167, 400) 2.6 MB
+wrote low_005.parquet (4167, 400) 2.4 MB
+wrote low_006.parquet (4167, 400) 2.4 MB
+wrote low_007.parquet (4167, 400) 2.2 MB
+wrote low_008.parquet (4167, 400) 2.4 MB
+wrote low_009.parquet (4167, 400) 2.4 MB
+wrote low_010.parquet (4167, 400) 2.5 MB
+wrote low_011.parquet (4167, 400) 2.5 MB
+wrote low_012.parquet (4167, 400) 2.5 MB
+wrote low_013.parquet (4167, 400) 2.5 MB
+wrote low_014.parquet (4167, 400) 2.5 MB
+wrote low_015.parquet (4167, 400) 2.5 MB
+wrote low_016.parquet (4167, 400) 2.5 MB
+wrote low_017.parquet (4167, 400) 2.7 MB
+wrote low_018.parquet (4167, 400) 2.5 MB
+wrote low_019.parquet (4167, 153) 1.1 MB
+wrote close_000.parquet (4167, 400) 2.6 MB
+wrote close_001.parquet (4167, 400) 2.7 MB
+wrote close_002.parquet (4167, 400) 2.5 MB
+wrote close_003.parquet (4167, 400) 2.5 MB
+wrote close_004.parquet (4167, 400) 2.7 MB
+wrote close_005.parquet (4167, 400) 2.5 MB
+wrote close_006.parquet (4167, 400) 2.5 MB
+wrote close_007.parquet (4167, 400) 2.3 MB
+wrote close_008.parquet (4167, 400) 2.4 MB
+wrote close_009.parquet (4167, 400) 2.5 MB
+wrote close_010.parquet (4167, 400) 2.5 MB
+wrote close_011.parquet (4167, 400) 2.6 MB
+wrote close_012.parquet (4167, 400) 2.6 MB
+wrote close_013.parquet (4167, 400) 2.6 MB
+wrote close_014.parquet (4167, 400) 2.6 MB
+wrote close_015.parquet (4167, 400) 2.6 MB
+wrote close_016.parquet (4167, 400) 2.6 MB
+wrote close_017.parquet (4167, 400) 2.8 MB
+wrote close_018.parquet (4167, 400) 2.6 MB
+wrote close_019.parquet (4167, 153) 1.1 MB
+wrote volume_000.parquet (4167, 400) 2.8 MB
+wrote volume_001.parquet (4167, 400) 2.8 MB
+wrote volume_002.parquet (4167, 400) 2.7 MB
+wrote volume_003.parquet (4167, 400) 2.6 MB
+wrote volume_004.parquet (4167, 400) 2.8 MB
+wrote volume_005.parquet (4167, 400) 2.7 MB
+wrote volume_006.parquet (4167, 400) 2.7 MB
+wrote volume_007.parquet (4167, 400) 2.5 MB
+wrote volume_008.parquet (4167, 400) 2.7 MB
+wrote volume_009.parquet (4167, 400) 2.6 MB
+wrote volume_010.parquet (4167, 400) 2.6 MB
+wrote volume_011.parquet (4167, 400) 2.8 MB
+wrote volume_012.parquet (4167, 400) 2.8 MB
+wrote volume_013.parquet (4167, 400) 2.7 MB
+wrote volume_014.parquet (4167, 400) 2.7 MB
+wrote volume_015.parquet (4167, 400) 2.7 MB
+wrote volume_016.parquet (4167, 400) 2.7 MB
+wrote volume_017.parquet (4167, 400) 2.9 MB
+wrote volume_018.parquet (4167, 400) 2.8 MB
+wrote volume_019.parquet (4167, 153) 1.1 MB
