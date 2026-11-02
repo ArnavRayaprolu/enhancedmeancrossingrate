@@ -38,9 +38,9 @@ def signal_matrix(pa, pb, cfg: C.Config, beta=None):
 
 
 def fold_statistics(px: np.ndarray, tr_end: int, ia: np.ndarray, ib: np.ndarray,
-                    cfg: C.Config, diagnostics: bool = False, test_ret=None,
-                    cost=None) -> pd.DataFrame:
-    """Statistics on the formation rows [0, tr_end) of px (bars x names).
+                    cfg: C.Config) -> pd.DataFrame:
+    """Selection statistics of every candidate pair on the formation rows
+    [0, tr_end) of px (bars x names); nothing after tr_end is read.
 
     distance  sum of squared differences of prices normalised to 1 (SSD)
     corr      correlation of bar log returns
@@ -48,55 +48,71 @@ def fold_statistics(px: np.ndarray, tr_end: int, ia: np.ndarray, ib: np.ndarray,
     beta      cointegrating slope (used by the hedged signal)
     halflife  AR(1) half-life of the log price ratio, bars
     mcr       zero-crossing rate of the traded signal z on formation bars
-    With diagnostics=True (R1) also:
-    ar1_z     lag-1 autocorrelation of z
-    xr_coint  crossing rate of the cointegrating residual about its mean
-    xr_ratio  crossing rate of the log ratio about its formation mean
-    cycles    completed engine round trips on formation z, per 1000 bars
-    and, if test_ret/cost are given, the pair's own out-of-sample outcome when
-    traded alone: oos_net (sum of net returns, unit weight), oos_trades,
-    oos_mcr (crossing rate of z in the test window).
+              (z needs `slow` bars of warm-up, so it is measured on the last
+              tr_end - slow + 1 formation bars)
     """
     tr = px[:tr_end]
     lr = np.diff(np.log(tr), axis=0)
-    lr = (lr - lr.mean(0)) / np.where(lr.std(0) > 0, lr.std(0), np.nan)
+    sd = lr.std(0)
+    lr = (lr - lr.mean(0)) / np.where(sd > 0, sd, np.nan)
     norm = tr / tr[0]
     out = []
     for s0 in range(0, len(ia), CHUNK):
         a, b = ia[s0:s0 + CHUNK], ib[s0:s0 + CHUNK]
         la, lb = np.log(tr[:, a]), np.log(tr[:, b])
-        p, beta, e = S.engle_granger(la, lb)
-        lratio = la - lb
+        p, beta, _ = S.engle_granger(la, lb)
         d = dict(a=a, b=b,
                  distance=((norm[:, a] - norm[:, b]) ** 2).sum(0),
                  corr=(lr[:, a] * lr[:, b]).mean(0),
                  coint_p=p, beta=beta,
-                 halflife=S.half_life(lratio))
+                 halflife=S.half_life(la - lb))
         if cfg.signal == "hedged":
-            z = S.ma_signal(S.hedged_series(px[:, a], px[:, b], beta), cfg.fast, cfg.slow)
+            z = S.ma_signal(S.hedged_series(tr[:, a], tr[:, b], beta), cfg.fast, cfg.slow)
         else:
-            z = S.ma_signal(S.ratio_series(px[:, a], px[:, b]), cfg.fast, cfg.slow)
-        ztr = z[:tr_end]
-        d["mcr"] = S.crossing_rate(ztr)
-        if diagnostics:
-            d["ar1_z"] = S.lag1_autocorr(ztr)
-            d["xr_coint"] = S.crossing_rate(e - e.mean(0))
-            d["xr_ratio"] = S.crossing_rate(lratio - lratio.mean(0))
-            nz = np.isfinite(ztr).sum(0)
-            d["cycles"] = 1000 * E.completed_cycles(ztr, cfg.entry, cfg.exit) / np.maximum(nz, 1)
-            if test_ret is not None:
-                st = E.states(z, cfg.entry, cfg.exit, "revised", start=tr_end - 1)[:-1]
-                ra, rb = test_ret[:, a], test_ret[:, b]
-                g = (st * (ra - rb) / 2).sum(0)
-                dpos = np.abs(np.diff(np.vstack([np.zeros((1, st.shape[1])), st,
-                                                 np.zeros((1, st.shape[1]))]), axis=0)).sum(0)
-                c = (cost[a] + cost[b]) / 2 * dpos            # |dpos| x (1/2 per leg) x 2 legs
-                d["oos_net"] = g - c
-                prev = np.vstack([np.zeros((1, st.shape[1])), st[:-1]])
-                d["oos_trades"] = ((prev != 0) & (st != prev)).sum(0) + (st[-1] != 0)
-                d["oos_mcr"] = S.crossing_rate(z[tr_end:])
+            z = S.ma_signal(S.ratio_series(tr[:, a], tr[:, b]), cfg.fast, cfg.slow)
+        d["mcr"] = S.crossing_rate(z)
         out.append(pd.DataFrame(d))
     return pd.concat(out, ignore_index=True)
+
+
+def diagnostics(px: np.ndarray, tr_end: int, st: pd.DataFrame, cfg: C.Config,
+                cost: np.ndarray) -> pd.DataFrame:
+    """R1: alternative mean-reversion measures and each pair's own
+    out-of-sample outcome, for the candidate pairs in `st` (a random sample).
+
+    ar1_z     lag-1 autocorrelation of z (formation)
+    xr_coint  crossing rate of the Engle-Granger residual about its mean
+    xr_ratio  crossing rate of the log price ratio about its formation mean
+              (the literal 'mean crossing' reading of the name)
+    cycles    completed engine round trips on formation z, per 1000 bars
+    oos_net   net return of the pair traded alone at unit weight over the
+              test window (revised engine, headline costs)
+    oos_trades completed round trips in the test window (incl. liquidation)
+    oos_mcr   crossing rate of z in the test window
+    """
+    a = st["a"].to_numpy(); b = st["b"].to_numpy()
+    out = st.copy()
+    tr = px[:tr_end]
+    la, lb = np.log(tr[:, a]), np.log(tr[:, b])
+    _, _, e = S.engle_granger(la, lb)
+    lratio = la - lb
+    z = S.ma_signal(S.ratio_series(px[:, a], px[:, b]), cfg.fast, cfg.slow)
+    ztr = z[:tr_end]
+    out["ar1_z"] = S.lag1_autocorr(ztr)
+    out["xr_coint"] = S.crossing_rate(e - e.mean(0))
+    out["xr_ratio"] = S.crossing_rate(lratio - lratio.mean(0))
+    nz = np.isfinite(ztr).sum(0)
+    out["cycles"] = 1000 * E.completed_cycles(ztr, cfg.entry, cfg.exit) / np.maximum(nz, 1)
+    ret = px[tr_end:] / px[tr_end - 1:-1] - 1
+    st_ = E.states(z, cfg.entry, cfg.exit, "revised", start=tr_end - 1)[:len(ret)]
+    g = (st_ * (ret[:, a] - ret[:, b]) / 2).sum(0)
+    dpos = np.abs(np.diff(np.vstack([np.zeros((1, st_.shape[1])), st_,
+                                     np.zeros((1, st_.shape[1]))]), axis=0)).sum(0)
+    out["oos_net"] = g - (cost[a] + cost[b]) / 2 * dpos   # |dpos| x 1/2 per leg x 2 legs
+    prev = np.vstack([np.zeros((1, st_.shape[1])), st_[:-1]])
+    out["oos_trades"] = ((prev != 0) & (st_ != prev)).sum(0) + (st_[-1] != 0)
+    out["oos_mcr"] = S.crossing_rate(z[tr_end:])
+    return out
 
 
 def pct_rank(x: pd.Series, higher_is_better: bool) -> pd.Series:

@@ -76,8 +76,8 @@ class Config:
     max_uses: int = 1                 # times a security may appear in the book
     weighting: str = "capped"         # capped | active (Eq. 8) | rank | equal
     cap: float = 0.10                 # per-pair cap for 'capped' (= 2 / n_pairs)
-    train_days: int = 60
-    test_days: int = 21
+    train_days: int = 90              # walk-forward windows of the original notebook
+    test_days: int = 45
 
     @property
     def key(self) -> str:
@@ -85,7 +85,7 @@ class Config:
 
 
 ORIGINAL = Config(label="original", universe="sp500", sector_pairs=True, n_pairs=5,
-                  weighting="active", engine="original", train_days=90, test_days=45)
+                  weighting="active", engine="original")
 PRIMARY = Config()
 
 # (label, overrides) -- one-at-a-time departures from PRIMARY (R8)
@@ -106,7 +106,7 @@ GRID_SPEC = [
     ("hedged_spread", dict(signal="hedged")),
     ("complete_case", dict(min_coverage=1.0, ffill=False)),
     ("delay_1bar", dict(lag=1)),
-    ("windows_90_45", dict(train_days=90, test_days=45)),
+    ("windows_60_21", dict(train_days=60, test_days=21)),
     ("universe_500", dict(top_k=500)),
     ("sp500_sector", dict(universe="sp500", sector_pairs=True)),
     ("engine_original", dict(engine="original")),
@@ -115,6 +115,19 @@ GRID_SPEC = [
 
 def grid() -> list[Config]:
     return [replace(PRIMARY, label=lab, **kw) for lab, kw in GRID_SPEC]
+
+
+# fields that change the candidate statistics; configs that agree on all of
+# them share one statistics pass per fold
+STAT_FIELDS = ("universe", "top_k", "min_price", "min_vol", "min_coverage", "ffill",
+               "sector_pairs", "signal", "fast", "slow", "train_days", "test_days")
+
+
+def stat_key(c: Config) -> tuple:
+    return tuple(getattr(c, f) for f in STAT_FIELDS)
+
+
+DIAG_SAMPLE = 50000                  # candidate pairs per fold for the R1 diagnostics
 
 
 # --------------------------------------------------------------------------- #

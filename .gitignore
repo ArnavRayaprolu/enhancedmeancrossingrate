@@ -13,3 +13,5 @@ results/cache/
 results/mirror_perp_1h/
 results/dev_search/log.csv
 results/iterations/*.pkl
+results/raw/
+data/alpaca_prepared.pkl
