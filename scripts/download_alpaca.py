@@ -195,6 +195,9 @@ def stage_hourly(k: int, n: int):
     syms = sorted(rk.index[rk.superset].astype(str))
     syms = syms[k::n]
     out = OUT / "hourly" / f"c{k}"
+    if list(out.glob("close_*.parquet")):
+        print(f"chunk {k} already downloaded; skipping", flush=True)
+        return
     out.mkdir(parents=True, exist_ok=True)
     print(f"chunk {k}/{n}: {len(syms)} symbols", flush=True)
     fields = {f: {} for f in ("open", "high", "low", "close", "volume")}
