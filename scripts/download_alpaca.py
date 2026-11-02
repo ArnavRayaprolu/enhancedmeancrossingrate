@@ -55,6 +55,11 @@ S = requests.Session()
 S.headers.update({"APCA-API-KEY-ID": os.environ.get("ALPACA_KEY_ID", ""),
                   "APCA-API-SECRET-KEY": os.environ.get("ALPACA_SECRET_KEY", "")})
 _last = [0.0]
+TICKER = re.compile(r"^[A-Z]{1,5}([.][A-Z]{1,2})?$")
+
+
+class BadRequest(Exception):
+    pass
 
 
 def get(url, params=None):
@@ -72,6 +77,8 @@ def get(url, params=None):
             time.sleep(max(1.0, float(r.headers.get("Retry-After", 5)))); continue
         if r.status_code >= 500:
             time.sleep(2 ** attempt); continue
+        if r.status_code == 400:
+            raise BadRequest(r.text[:200])
         if r.status_code in (401, 403):
             sys.exit(f"Alpaca refused the request ({r.status_code}): set ALPACA_KEY_ID / "
                      f"ALPACA_SECRET_KEY repository secrets. {r.text[:200]}")
@@ -81,7 +88,21 @@ def get(url, params=None):
 
 
 def bars(symbols: list[str], timeframe: str, start: str, end: str | None):
-    """Yield (symbol, list of bar dicts) for a batch of symbols."""
+    """{symbol: list of bar dicts} for a batch; a batch the API rejects is
+    split in halves until the offending symbol is isolated and skipped."""
+    try:
+        return _bars(symbols, timeframe, start, end)
+    except BadRequest as e:
+        if len(symbols) == 1:
+            print(f"  skip {symbols[0]}: {e}", flush=True)
+            return {}
+        h = len(symbols) // 2
+        out = bars(symbols[:h], timeframe, start, end)
+        out.update(bars(symbols[h:], timeframe, start, end))
+        return out
+
+
+def _bars(symbols: list[str], timeframe: str, start: str, end: str | None):
     params = dict(symbols=",".join(symbols), timeframe=timeframe, start=start,
                   limit=10000, adjustment="all", feed="sip", sort="asc")
     if end:
@@ -111,6 +132,7 @@ def stage_assets():
         rows += js
     a = pd.DataFrame(rows)
     a = a[a["exchange"].isin(["NYSE", "NASDAQ", "AMEX", "ARCA", "BATS"])]
+    a = a[a["symbol"].astype(str).str.match(TICKER)]
     a["instrument_ok"] = ~a["name"].fillna("").str.contains(EXCLUDE.pattern, flags=re.I, regex=True) & (a["exchange"] != "ARCA")
     a.to_csv(OUT / "assets.csv", index=False)
     print(a.groupby(["status", "instrument_ok"]).size(), flush=True)
@@ -119,7 +141,7 @@ def stage_assets():
 def stage_daily():
     a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str})
     a["instrument_ok"] = a["instrument_ok"].astype(str) == "True"
-    syms = sorted(a.loc[a.instrument_ok, "symbol"].astype(str).unique())
+    syms = sorted(s for s in a.loc[a.instrument_ok, "symbol"].astype(str).unique() if TICKER.match(s))
     print(f"daily bars for {len(syms)} symbols", flush=True)
     close, vol = {}, {}
     for i in range(0, len(syms), 100):
