@@ -25,8 +25,8 @@ import numpy as np
 
 
 def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = None,
-               max_hold: int | None = None, allow: np.ndarray | None = None
-               ) -> tuple[np.ndarray, np.ndarray]:
+               max_hold: int | None = None, allow: np.ndarray | None = None,
+               confirm: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """Vectorised state machine over the columns of z (T x P).
 
     Optional risk exits (off by default):
@@ -34,6 +34,9 @@ def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = N
       max_hold  close after max_hold bars in the trade
     After a risk exit the pair is not re-entered until z has come back inside
     the entry band (|z| < entry), so a stopped-out trade is not re-opened at once.
+      confirm   confirmation entry: open only when z crosses back INSIDE the band
+                after having been outside it (z_{t-1} <= -entry < z_t opens long;
+                z_{t-1} >= entry > z_t opens short), i.e. once reversion has begun
 
     Returns
     -------
@@ -44,6 +47,7 @@ def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = N
     s = np.zeros(P); held = np.zeros(P); armed = np.ones(P, dtype=bool)
     out = np.zeros((T, P))
     closed = np.zeros(P)
+    zprev = np.full(P, np.nan)
     for t in range(T):
         zt = z[t]
         ok = np.isfinite(zt)
@@ -62,8 +66,13 @@ def run_states(z: np.ndarray, entry: float, exit_: float, stop: float | None = N
         flat = ok & (s == 0) & armed
         if allow is not None:
             flat &= allow[t]
-        s = np.where(flat & (zt <= -entry), 1.0, s)
-        s = np.where(flat & (zt >= entry), -1.0, s)
+        if confirm:
+            s = np.where(flat & (zprev <= -entry) & (zt > -entry) & (zt < -exit_), 1.0, s)
+            s = np.where(flat & (zprev >= entry) & (zt < entry) & (zt > exit_), -1.0, s)
+        else:
+            s = np.where(flat & (zt <= -entry), 1.0, s)
+            s = np.where(flat & (zt >= entry), -1.0, s)
+        zprev = np.where(ok, zt, zprev)
         out[t] = s
     return out, closed
 

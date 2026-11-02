@@ -192,3 +192,11 @@ def test_magnitude_filtered_crossings():
     d = np.r_[0.002, -0.002, 0.001, -0.001, 0.03, 0.01, -0.001, -0.03, -0.01, 0.002][:, None]
     assert signal_crossing_rate(d)[0] > 0.5                    # plain count: many
     assert completed_cycle_rate(d, 0.02, 0.0)[0] == pytest.approx(2 / 10)  # filtered: 2
+
+
+def test_confirmation_entry():
+    # threshold entry would open at -2.3; confirmation waits until z turns back inside
+    z = np.array([-1.0, -2.3, -2.8, -1.7, -1.2, -0.3, 0.2])[:, None]
+    st, closed = run_states(z, 2.0, 0.5, confirm=True)
+    assert st[:, 0].tolist() == [0, 0, 0, 1, 1, 0, 0]
+    assert closed[0] == 1

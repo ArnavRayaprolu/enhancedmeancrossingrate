@@ -188,9 +188,37 @@ def batch_slow():
     return specs
 
 
+HOURLY = ["crypto_1h", "sp500_1h", "nifty50_1h", "etf_1h"]
+
+
+def batch_it5():
+    """Innovation round (all with a 1-bar execution delay): signals x engines x criteria."""
+    sigs = {"ratio140": dict(signal="LEVEL", window=140, entry=2.0, exit=0.5),
+            "ratio48": dict(signal="LEVEL", window=48, entry=2.0, exit=0.5),
+            "maratio": dict(signal="MAD", window=140, entry=1.0, exit=0.25)}
+    engines = {"threshold": {}, "confirm": {"confirm": True}, "agree": {"agree": 1.0},
+               "costgate": {"min_dev_cost": 3},
+               "confirm+costgate": {"confirm": True, "min_dev_cost": 3},
+               "confirm+agree+stop": {"confirm": True, "agree": 1.0, "timestop": True}}
+    crits = {"EMCR": "MCR", "EMCRc": "EMCRc", "EMCRamp": "EMCRamp",
+             "EMCRamp+Coint+HalfLife": "EMCRamp+Coint+HalfLife",
+             "EMCR+Coint+HalfLife": "EMCR+Coint+HalfLife",
+             "EMCRc+Coint+HalfLife": "EMCRc+Coint+HalfLife", "Cointegration": "Cointegration",
+             "HalfLife": "HalfLife", "Distance": "Distance", "Correlation": "Correlation"}
+    specs = {}
+    for (sn, sk), (en, ek), (cn, cc) in itertools.product(sigs.items(), engines.items(),
+                                                          crits.items()):
+        prm = {"lag": 1, **{k: v for k, v in ek.items() if k != "timestop"}}
+        specs[f"{sn}|{en}|{cn}"] = Spec(criterion=cc, n_pairs=20, max_uses=1, top_k=100,
+                                       weighting="rank", params=prm,
+                                       max_hold=sk["window"] if ek.get("timestop") else None,
+                                       **sk)
+    return specs
+
+
 if __name__ == "__main__":
     name = sys.argv[1]
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 3
-    venues = sys.argv[3].split(",") if len(sys.argv) > 3 else VENUES
+    venues = sys.argv[3].split(",") if len(sys.argv) > 3 else (HOURLY if name == "it5" else VENUES)
     tag = name if len(sys.argv) <= 3 else f"{name}_{'_'.join(venues)}"
     run_batch(tag, globals()[f"batch_{name}"](), venues=venues, workers=workers)

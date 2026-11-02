@@ -230,6 +230,35 @@ def scores(f: dict, sp: Spec, kappa: float) -> np.ndarray:
         if k2 not in f:
             f[k2] = completed_cycle_rate(zc["z"][:f["train"]], delta, 0.0)
         s = rk(f[k2])
+    elif c in ("EMCRamp", "EMCRamp+Coint+HalfLife"):
+        # amplitude-filtered EMCR: a crossing of the ratio's mean counts only if the
+        # ratio first moved at least m x round-trip cost away from it (in %), so a
+        # high score means frequent reversions that are large enough to trade
+        m = sp.params.get("amp_mult", 4.0)
+        delta = m * 2 * kappa
+        k2 = ("amp", sp.signal, sp.window, delta)
+        if k2 not in f:
+            d = zc["z"][:f["train"]] * zc["sdr"][:f["train"]]      # % distance from the mean
+            f[k2] = completed_cycle_rate(d, delta, 0.0)
+        s = rk(f[k2])
+        if c == "EMCRamp+Coint+HalfLife":
+            s = (s + rk(f["coint_p"], False) + rk(zc["halflife"], False)) / 3
+    elif c in ("EMCRc", "EMCRc+Coint+HalfLife", "EMCR+Coint+HalfLife"):
+        # consensus EMCR: crossing rate of equilibrium measured on three signals --
+        # the price ratio around its moving mean (LEVEL), the moving-average ratio
+        # (MAD: fast vs slow MA of the ratio) and the hedged spread (HEDGED);
+        # average percentile rank
+        w = sp.window
+        e_lvl = rk(_zcache(f, "LEVEL", w)["mcr"])
+        if c == "EMCR+Coint+HalfLife":
+            emcr = e_lvl
+        else:
+            emcr = (e_lvl + rk(_zcache(f, "MAD", w, fast=max(2, w // 4))["mcr"])
+                    + rk(_zcache(f, "HEDGED", w)["mcr"])) / 3
+        if c == "EMCRc":
+            s = emcr
+        else:
+            s = (emcr + rk(f["coint_p"], False) + rk(_zcache(f, "LEVEL", w)["halflife"], False)) / 3
     elif c in ("ECR", "MCRms"):
         # multi-horizon equilibrium-crossing rate: average percentile rank of the
         # crossing rate measured around trailing means of several lengths.
@@ -288,8 +317,16 @@ def run_fold(f: dict, sp: Spec, kappa: float, borrow_bar: float, use_fund: bool)
         # (2 x kappa) away from its mean in percentage terms, |z| * SD/MA
         ok = np.abs(z) * zc["sdr"][:, chosen] >= md * 2 * kappa
         allow = ok if allow is None else (allow & ok)
+    agree = sp.params.get("agree")
+    if agree:
+        # two-signal agreement: the hedged-spread z-score must point the same way
+        # and be at least `agree` standard deviations from its mean
+        z2 = _zcache(f, "HEDGED", sp.window)["z"][:, chosen]
+        ok2 = (np.sign(z2) == np.sign(z)) & (np.abs(z2) >= agree)
+        allow = ok2 if allow is None else (allow & ok2)
     pos = positions_for_window(z, te.start, te.stop, sp.entry, sp.exit,
-                               stop=sp.stop, max_hold=sp.max_hold, allow=allow)
+                               stop=sp.stop, max_hold=sp.max_hold, allow=allow,
+                               confirm=bool(sp.params.get("confirm")))
     lag = int(sp.params.get("lag", 0))
     if lag:
         # execution delay: a decision taken at the close of bar t is executed at the
