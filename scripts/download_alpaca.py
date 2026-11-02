@@ -49,7 +49,7 @@ EXCLUDE = re.compile(
     r"VanEck|Global X|First Trust|GraniteShares|MicroSectors|VelocityShares|iPath|"
     r"\bFund\b|Acquisition|Warrant|\bUnits?\b|\bRights?\b|Preferred|Depositary Shares, each|"
     r"\bNotes?\b|Debenture|Leveraged|\bIndex\b|Trust Units|Subordinated|\bBond\b|Treasury|"
-    r"Blank Check|\b\d+(\.\d+)?%", re.I)
+    r"Blank Check|\b\d+(?:\.\d+)?%", re.I)
 
 S = requests.Session()
 S.headers.update({"APCA-API-KEY-ID": os.environ.get("ALPACA_KEY_ID", ""),
@@ -111,13 +111,14 @@ def stage_assets():
         rows += js
     a = pd.DataFrame(rows)
     a = a[a["exchange"].isin(["NYSE", "NASDAQ", "AMEX", "ARCA", "BATS"])]
-    a["instrument_ok"] = ~a["name"].fillna("").str.contains(EXCLUDE) & (a["exchange"] != "ARCA")
+    a["instrument_ok"] = ~a["name"].fillna("").str.contains(EXCLUDE.pattern, flags=re.I, regex=True) & (a["exchange"] != "ARCA")
     a.to_csv(OUT / "assets.csv", index=False)
     print(a.groupby(["status", "instrument_ok"]).size(), flush=True)
 
 
 def stage_daily():
-    a = pd.read_csv(OUT / "assets.csv")
+    a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str})
+    a["instrument_ok"] = a["instrument_ok"].astype(str) == "True"
     syms = sorted(a.loc[a.instrument_ok, "symbol"].astype(str).unique())
     print(f"daily bars for {len(syms)} symbols", flush=True)
     close, vol = {}, {}
@@ -155,14 +156,16 @@ def stage_select():
     rk["superset"] = rk["best_rank"] <= TOP_PER_YEAR
     rk.index.name = "symbol"
     rk.to_csv(OUT / "universe.csv")
-    a = pd.read_csv(OUT / "assets.csv").set_index("symbol")
+    a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str}).set_index("symbol")
     sel = rk.index[rk.superset]
     print(f"superset: {len(sel)} symbols; of which inactive (delisted) now: "
           f"{int((a.reindex(sel)['status'] == 'inactive').sum())}", flush=True)
 
 
 def stage_hourly(k: int, n: int):
-    rk = pd.read_csv(OUT / "universe.csv", index_col=0)
+    rk = pd.read_csv(OUT / "universe.csv", index_col=0, keep_default_na=False, na_values=[""],
+                     dtype={"symbol": str})
+    rk["superset"] = rk["superset"].astype(str) == "True"
     syms = sorted(rk.index[rk.superset].astype(str))
     syms = syms[k::n]
     out = OUT / "hourly" / f"c{k}"
