@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       stages:
-        description: "prep = assets+daily+select; hourly = 30-min bars; all = both"
+        description: "prep = assets+daily+select; hourly = 1-hour bars; all = both"
         default: all
 
 permissions:
@@ -59,7 +59,7 @@ jobs:
       fail-fast: false
       max-parallel: 1            # one account-wide rate limit
       matrix:
-        chunk: [0, 1, 2, 3, 4, 5]
+        chunk: [0, 1, 2]
     steps:
       - uses: actions/checkout@v4
         with: { ref: "${{ github.ref_name }}" }
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install pandas numpy pyarrow requests
-      - run: python scripts/download_alpaca.py hourly ${{ matrix.chunk }} 6
+      - run: python scripts/download_alpaca.py hourly ${{ matrix.chunk }} 3
       - name: Commit
         run: |
           git config user.name  "github-actions[bot]"

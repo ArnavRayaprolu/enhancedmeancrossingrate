@@ -21,9 +21,11 @@ Output (data/alpaca/)
     daily/{close,volume}_{part}.parquet
     universe.csv                       yearly liquidity ranks, superset flag
     hourly/c{K}/{open,high,low,close,volume}_{year}.parquet
-        session hours stamped 09:30 ... 15:30 ET (the 15:30 bar ends 16:00),
-        aggregated from 30-minute bars: open first, high max, low min,
-        close last, volume sum; hours without a trade are missing.
+        Alpaca's native 1-hour bars (clock hours). Kept: the seven bars that
+        start 09:00 ... 15:00 ET. The 09:00 bar includes 09:00-09:30 pre-market
+        trades together with the opening half hour; its close is the 10:00
+        price. The 15:00 bar closes at the 16:00 close. Hours without a trade
+        are missing.
 """
 from __future__ import annotations
 
@@ -168,21 +170,19 @@ def stage_hourly(k: int, n: int):
     print(f"chunk {k}/{n}: {len(syms)} symbols", flush=True)
     fields = {f: {} for f in ("open", "high", "low", "close", "volume")}
     for i in range(0, len(syms), 50):
-        acc = bars(syms[i:i + 50], "30Min", START, end_ts())
-        for s, b in acc.items():
+        acc = bars(syms[i:i + 50], "1Hour", START, end_ts())
+        for s_, b in acc.items():
             if not b:
                 continue
             d = pd.DataFrame(b)
-            t = pd.to_datetime(d["t"], utc=True).dt.tz_convert("America/New_York")
-            mins = t.dt.hour * 60 + t.dt.minute - (9 * 60 + 30)
-            keep = (mins >= 0) & (mins < 390)
-            d, t, mins = d[keep], t[keep], mins[keep]
-            hour_start = t.dt.normalize() + pd.to_timedelta(9 * 60 + 30 + (mins // 60) * 60, unit="min")
-            g = d.assign(_hour=hour_start.dt.tz_convert("UTC").to_numpy()).groupby("_hour")
-            agg = pd.DataFrame({"open": g["o"].first(), "high": g["h"].max(),
-                                "low": g["l"].min(), "close": g["c"].last(), "volume": g["v"].sum()})
-            for f in fields:
-                fields[f][s] = agg[f].astype(np.float32)
+            t = pd.to_datetime(d["t"], utc=True)
+            et = t.dt.tz_convert("America/New_York")
+            keep = ((et.dt.hour >= 9) & (et.dt.hour <= 15)).to_numpy()
+            d = d[keep]
+            ix = pd.DatetimeIndex(t[keep].dt.tz_localize(None))       # naive UTC
+            for f, col in (("open", "o"), ("high", "h"), ("low", "l"), ("close", "c"),
+                           ("volume", "v")):
+                fields[f][s_] = pd.Series(d[col].to_numpy(np.float32), index=ix)
         print(f"  {min(i + 50, len(syms))}/{len(syms)}", flush=True)
     for f, dct in fields.items():
         df = pd.DataFrame(dct).sort_index()
