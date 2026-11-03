@@ -88,6 +88,7 @@ def main(dataset, hedge="ols"):
                 g += r["gross"].sum(); u += r["turn"].sum()
             per[(c, entry, n)] = fl; turn[(c, entry, n)] = (g, u)
         print(f"  settings done [{time.time() - t0:.0f}s]", flush=True)
+        R._PREP.clear(); del prep                       # free this engine's fold data (memory)
     n_folds = len(next(iter(per.values())))
     # ---- step 2: walk-forward optimisation ----
     wfo, chosen = {}, []
