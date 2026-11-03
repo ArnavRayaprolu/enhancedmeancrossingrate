@@ -507,6 +507,11 @@ def run_fold(fp, des: Design):
     n = len(ch)
     if des.weighting == "equal":
         w = np.where(pos != 0, 1.0 / max(n, 1), 0.0)
+    elif des.weighting == "invvol":
+        # equal risk per pair: committed weight proportional to 1 / formation spread volatility,
+        # scaled so that the committed weights sum to 1 (gross exposure <= 1)
+        iv = 1.0 / np.maximum(sd, 1e-4)
+        w = np.where(pos != 0, (iv / iv.sum())[None, :], 0.0)
     else:
         w = E.pair_weights(pos, np.ones(n), "capped", 2.0 / max(n, 1))
     cost = des.cost_scale * fp["half"] + des.fixed_bps / 1e4
