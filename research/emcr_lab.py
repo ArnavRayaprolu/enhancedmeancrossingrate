@@ -256,6 +256,7 @@ _PREP: dict = {}
 
 def prepare(D, des: Design):
     key = (des.F, des.T, des.top_k, des.entry, des.exit, des.signal, des.params.get("half_bps", 2.0),
+           des.params.get("same"),
            des.params.get("cost_mult", 3.0), tuple(des.params.get("roll_windows", (5, 10, 20))))
     if key in _PREP:
         return _PREP[key]
@@ -281,6 +282,14 @@ def prepare(D, des: Design):
         # typical effective half-spread of the 250 most liquid US stocks after 2015
         half = np.full(len(names), des.params.get("half_bps", 2.0) / 1e4)
         ia, ib = np.triu_indices(len(names), 1)
+        same = des.params.get("same")
+        if same:
+            sp = pd.read_csv(ROOT / "mcr" / "sp500_constituents.csv")
+            col = {"sector": "GICS Sector", "subind": "GICS Sub-Industry"}[same]
+            grp = dict(zip(sp["Symbol"].str.replace(".", "-", regex=False), sp[col]))
+            g = np.array([grp.get(t, f"_none_{i}") for i, t in enumerate(names)])
+            keep = g[ia] == g[ib]
+            ia, ib = ia[keep], ib[keep]
         des0 = Design(entry=des.entry, exit=des.exit, params=des.params)
         if des.signal == "rolling":
             des0.params = dict(des.params, roll_entry=des.entry)
