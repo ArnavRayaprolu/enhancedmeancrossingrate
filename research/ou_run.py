@@ -67,7 +67,7 @@ _PREP: dict = {}
 
 
 def prepare(D, des: O.OUDesign, same: str | None, top_k: int):
-    key = (id(D), des.F, des.T, des.entry, des.stop, des.hl_mult, des.zmode, same, top_k)
+    key = (id(D), des.F, des.T, des.entry, des.stop, des.hl_mult, des.zmode, des.hedge, same, top_k)
     if key in _PREP:
         return _PREP[key]
     C, X, V = D["close"], D["ex"], D["vol"]
