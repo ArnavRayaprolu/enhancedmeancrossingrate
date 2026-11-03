@@ -61,8 +61,9 @@ def sharpe(x):
     return x.mean() / x.std() * np.sqrt(252) if len(x) > 2 and x.std() > 0 else -np.inf
 
 
-def main(dataset, hedge="ols"):
+def main(dataset, hedge="ols", ticks=0.0):
     D = R.load(dataset); bpd = D["bpd"]
+    hedge_tag = hedge + (f"_tick{ticks:g}" if ticks > 0 else "")
     if dataset == "hourly":
         F, T, top_k, lookback = 60 * bpd, 10 * bpd, 250, 25          # ~1 year of trading windows
     else:
@@ -77,7 +78,7 @@ def main(dataset, hedge="ols"):
     for entry in ENTRIES:
         zmode, ent, xl, xs = ENGINES[entry]
         base = O.OUDesign(F=F, T=T, entry=ent, zmode=zmode, exit_long=xl, exit_short=xs,
-                          hedge=hedge, bars_per_year=252 * bpd)
+                          hedge=hedge, ticks=ticks, bars_per_year=252 * bpd)
         prep = R.prepare(D, base, None, top_k)
         print(f"{dataset} {hedge} engine {entry}: {len(prep)} folds, "
               f"{np.mean([len(p['stats']) for p in prep]):.0f} candidate pairs per fold "
@@ -108,8 +109,8 @@ def main(dataset, hedge="ols"):
             chosen.append(dict(criterion=c, fold=k, engine=best[0], n_pairs=best[1]))
         wfo[c] = pd.concat(parts).sort_index()
     W = pd.DataFrame(wfo)
-    W.to_csv(OUT / f"wfo_daily_{dataset}_{hedge}.csv")
-    pd.DataFrame(chosen).to_csv(OUT / f"wfo_choices_{dataset}_{hedge}.csv", index=False)
+    W.to_csv(OUT / f"wfo_daily_{dataset}_{hedge_tag}.csv")
+    pd.DataFrame(chosen).to_csv(OUT / f"wfo_choices_{dataset}_{hedge_tag}.csv", index=False)
     # static (fixed setting) results for reference
     static = []
     for (c, e, n), fl in per.items():
@@ -117,7 +118,7 @@ def main(dataset, hedge="ols"):
         g, u = turn[(c, e, n)]
         static.append(dict(criterion=c, engine=e, n_pairs=n, sharpe=sharpe(x), ann_ret=x.mean() * 252,
                            breakeven_bps=1e4 * g / u if u > 0 else np.nan))
-    pd.DataFrame(static).to_csv(OUT / f"static_{dataset}_{hedge}.csv", index=False)
+    pd.DataFrame(static).to_csv(OUT / f"static_{dataset}_{hedge_tag}.csv", index=False)
     # ---- step 3: report ----
     rows = []
     for c in CRITS:
@@ -137,8 +138,8 @@ def main(dataset, hedge="ols"):
     trials = np.array([sharpe(pd.concat(fl)) for fl in per.values()]) / np.sqrt(252)
     best = perf["sharpe"].idxmax()
     dsr = I.deflated_sharpe(W[best].dropna().to_numpy(), trials[np.isfinite(trials)])
-    perf.to_csv(OUT / f"wfo_perf_{dataset}_{hedge}.csv"); years.to_csv(OUT / f"wfo_years_{dataset}_{hedge}.csv")
-    dm.to_csv(OUT / f"wfo_dm_{dataset}_{hedge}.csv", index=False)
+    perf.to_csv(OUT / f"wfo_perf_{dataset}_{hedge_tag}.csv"); years.to_csv(OUT / f"wfo_years_{dataset}_{hedge_tag}.csv")
+    dm.to_csv(OUT / f"wfo_dm_{dataset}_{hedge_tag}.csv", index=False)
     pd.set_option("display.width", 200)
     print("\nWALK-FORWARD OPTIMISED PERFORMANCE\n", perf.round(3).to_string())
     print("\nSHARPE BY YEAR\n", years.round(2).to_string())
@@ -148,4 +149,5 @@ def main(dataset, hedge="ols"):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "ols")
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "ols",
+         float(sys.argv[3]) if len(sys.argv) > 3 else 0.0)

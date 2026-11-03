@@ -58,7 +58,9 @@ class OUDesign:
     n_pairs: int = 20
     max_uses: int = 2
     criterion: str = "EMCRscore"
-    cost: float = 2.5e-4         # per dollar traded per leg (half-spread + fees)
+    cost: float = 2.5e-4         # per dollar traded per leg (half-spread + fees), flat model
+    ticks: float = 0.0           # > 0: tick-based model, half-spread = ticks x $0.01 / (2 x price)
+    fees_bps: float = 0.3        #      plus commission + regulatory fees per dollar traded
     borrow_pa: float = 0.005
     bars_per_year: float = 252.0
     params: dict = field(default_factory=dict)
@@ -319,6 +321,11 @@ def run_fold(fp, des: OUDesign):
     hedge_a = 1 / (1 + bt)
     n = len(ch)
     w = np.where(pos != 0, 1.0 / n, 0.0)
-    res = E.run_book(pos, w, ra, rb, hedge_a, np.full(n, des.cost), np.full(n, des.cost),
-                     des.borrow_pa / des.bars_per_year)
+    if des.ticks > 0:
+        p0 = fp["sig"][des.F - 1]                       # price at the end of formation
+        cvec = des.ticks * 0.01 / (2 * p0) + des.fees_bps / 1e4
+        ca, cb = cvec[a], cvec[b]
+    else:
+        ca, cb = np.full(n, des.cost), np.full(n, des.cost)
+    res = E.run_book(pos, w, ra, rb, hedge_a, ca, cb, des.borrow_pa / des.bars_per_year)
     return res, ch
