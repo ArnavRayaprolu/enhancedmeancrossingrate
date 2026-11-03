@@ -48,3 +48,30 @@ consistently. The best DEV designs earn ~2%/yr at ~1% volatility and do not surv
 untouched 2023-2026 sample. A Sharpe ratio of 2 with EMCR clearly ahead of the classical
 criteria was not found; reaching it by further searching would be specification search
 of the kind the referee warned against.
+
+## Phase 2 - other markets and new EMCR variants (full walk-forward 2016-2026, no split)
+
+Data: Alpaca daily OHLCV for 6,251 stocks (889 delisted) and 5,346 unleveraged ETFs/funds;
+signal at the close, execution at the next open; cost tiers 2-30 bps by dollar volume;
+data-quality screen for one-day moves of 3x or more (e.g. AQB, Jan 2017).
+
+* Market scan (`research/results/market_scan_wf_*.csv`), 18 criteria x 5 designs x 2 book sizes:
+  best Sharpe per market - US small caps 0.47 (EMCR-win), US large 0.43 (Cointegration),
+  US mid 0.36 (Correlation), ETFs 0.10 (EMCR-win). Average Sharpe is negative in every market.
+* New EMCR variants (`research/emcr_lab.py`): Kalman-filter EMCR (completed reversions of the
+  standardised prediction error, time-varying hedge ratio), volume-weighted MA-crossover EMCR,
+  variance ratio, with static, Kalman and volume-weighted MA trading signals
+  (`research/results/innov_scan_*.csv`).
+* Breadth / equal-risk weighting up to 400 pairs (`research/results/breadth_scan_*.csv`):
+  more pairs does not raise the Sharpe ratio.
+* Stock-vs-industry-basket strategy with EMCR selection (`research/basket_lab.py`,
+  `research/results/basket_scan.csv`): Sharpe <= 0.08 for every criterion.
+
+Best EMCR-led result: large caps, same GICS sub-industry candidates, 6m formation / 3m
+trading, static z (entry 2.5, exit 0.5), 50 pairs, criterion Correlation|EMCR1 (top half by
+correlation, ranked by completed 1-sigma reversions):
+Sharpe 0.78, 1.0%/yr at 1.3% volatility, +10.8% over 2016-2026 (Correlation 0.50,
+Cointegration -0.34, Distance -0.06). DM (Newey-West / bootstrap): vs Cointegration p = 0.011,
+vs Distance p = 0.012, vs Correlation p = 0.13. Deflated Sharpe over all 5,706 logged trials: 0.00.
+Performance is concentrated in 2016-2020 (yearly Sharpe 1.5, -0.3, 1.8, 3.1, 2.8) and is
+weak or negative after 2021.
