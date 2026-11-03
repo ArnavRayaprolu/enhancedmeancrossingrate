@@ -35,7 +35,7 @@ def load(dataset: str):
         ok = d["instrument_ok"]
         bpd = 7
     else:
-        parts = sorted((ROOT / "data" / "alpaca" / "m5").glob("*/g*.parquet"))
+        parts = sorted((ROOT / "data" / "alpaca" / dataset).glob("*/g*.parquet"))
         df = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
         df["symbol"] = df["symbol"].astype(str)
         t = pd.DatetimeIndex(df["t"]).tz_localize("UTC")

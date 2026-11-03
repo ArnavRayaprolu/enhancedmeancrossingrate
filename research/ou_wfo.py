@@ -2,6 +2,7 @@
 
     python research/ou_wfo.py hourly      # 500-name hourly panel, 2016-2026
     python research/ou_wfo.py m5          # 152-name 5-minute panel, 2024-2026
+    python research/ou_wfo.py m5_etf      # 120 liquid unleveraged ETFs, 5-minute, 2024-2026
 
 1. Walk-forward from the very start of the data: select pairs on the formation
    window (hourly: 60 trading days, 5-minute: 10 days), trade them on the next
@@ -66,6 +67,8 @@ def main(dataset, hedge="ols"):
         F, T, top_k, lookback = 60 * bpd, 10 * bpd, 250, 25          # ~1 year of trading windows
     else:
         F, T, top_k, lookback = 10 * bpd, 5 * bpd, 152, 25           # ~6 months of trading windows
+        if dataset == "m5_etf":
+            top_k = 120
     OUT.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     # ---- step 1: walk-forward returns for every (criterion, setting), per fold ----
