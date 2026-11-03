@@ -108,14 +108,39 @@ def amp_cycles(x: np.ndarray, thr: np.ndarray) -> np.ndarray:
     return cnt
 
 
-def rule_pnl(z: np.ndarray, dlr: np.ndarray, entry: float, exit_: float, cost_rt: np.ndarray):
-    """Formation backtest of the static rule on z (states decided at t earn
-    dlr[t+1]/2 per unit gross); cost_rt = cost per unit gross per round trip."""
+def rule_pnl(z: np.ndarray, dlr: np.ndarray, entry: float, exit_: float, cost_rt: np.ndarray,
+             full: bool = False):
+    """Formation backtest of a rule on z (states decided at t earn dlr[t+1]/2 per
+    unit gross); cost_rt = cost per unit gross per round trip.
+    full=True also returns per-trade statistics: number of profitable completed
+    reversions (net of costs), number of losing ones, and the daily Sharpe."""
     st = E.states(z, entry, exit_, "revised")
-    g = (st[:-1] * dlr[1:] / 2).sum(0)
+    daily = st[:-1] * dlr[1:] / 2
     dpos = np.abs(np.diff(np.vstack([np.zeros((1, st.shape[1])), st, np.zeros((1, st.shape[1]))]),
-                          axis=0)).sum(0)
-    return g - cost_rt / 2 * dpos, (st != 0).mean(0)
+                          axis=0))
+    tc = cost_rt / 2 * dpos                       # cost when the position changes
+    net = daily - tc[1:-1]
+    pnl = daily.sum(0) - (cost_rt / 2 * dpos.sum(0))
+    if not full:
+        return pnl, (st != 0).mean(0)
+    n = st.shape[1]
+    cur = np.zeros(n); wins = np.zeros(n); losses = np.zeros(n)
+    prev = np.zeros(n)
+    for t in range(st.shape[0]):
+        s_t = st[t]
+        closing = (prev != 0) & (s_t != prev)
+        wins += closing & (cur > 0); losses += closing & (cur <= 0)
+        cur = np.where(closing, 0.0, cur)
+        opening = (s_t != 0) & (s_t != prev)
+        cur = cur - np.where(opening, cost_rt, 0.0)     # charge the round trip at entry
+        if t + 1 < st.shape[0]:
+            cur = cur + np.where(s_t != 0, s_t * dlr[t + 1] / 2, 0.0)
+        prev = s_t
+    open_end = prev != 0
+    wins += open_end & (cur > 0); losses += open_end & (cur <= 0)
+    sd = net.std(0)
+    sh = np.where(sd > 0, net.mean(0) / np.where(sd > 0, sd, 1) * np.sqrt(BPY), 0.0)
+    return pnl, (st != 0).mean(0), wins, losses, sh
 
 
 def fold_stats(px_f, cost, ia, ib, des: Design):
@@ -149,16 +174,21 @@ def fold_stats(px_f, cost, ia, ib, des: Design):
         d["fpnl"] = pnl; d["ftin"] = tin
         d["amp"] = sd                                   # spread volatility (log ratio)
         for w in des.params.get("roll_windows", (5, 10, 20)):
-            m_ = S.rolling_mean(lr, w); sd_ = S.rolling_std(lr, w)
-            zr = np.empty_like(lr); zr[:] = np.nan
-            zr[w:] = (lr[w:] - m_[w - 1:-1]) / sd_[w - 1:-1]     # vs previous w closes
-            zr = zr[w:]
-            d[f"zc{w}"] = S.crossing_rate(zr)
-            d[f"cyc{w}"] = amp_cycles(np.nan_to_num(zr), np.full(len(a), 1.5))
-            dl = np.vstack([np.zeros((1, len(a))), np.diff(lr[w:], axis=0)])
-            pn, _ = rule_pnl(np.nan_to_num(zr), dl, des.params.get("roll_entry", 1.5), 0.0, c_rt)
-            d[f"fpnl{w}"] = pn
-            d[f"rev{w}"] = -S.lag1_autocorr(np.diff(lr, axis=0)[w - 1:])  # daily spread-return reversal
+          with np.errstate(divide="ignore", invalid="ignore"):
+              m_ = S.rolling_mean(lr, w); sd_ = S.rolling_std(lr, w)
+              zr = np.empty_like(lr); zr[:] = np.nan
+              zr[w:] = (lr[w:] - m_[w - 1:-1]) / sd_[w - 1:-1]     # vs previous w closes
+              zr = zr[w:]
+              d[f"zc{w}"] = S.crossing_rate(zr)
+              d[f"cyc{w}"] = amp_cycles(np.nan_to_num(zr), np.full(len(a), 1.5))
+              dl = np.vstack([np.zeros((1, len(a))), np.diff(lr[w:], axis=0)])
+              pn, _, wn, ls, shp = rule_pnl(np.nan_to_num(zr), dl, des.params.get("roll_entry", 1.5),
+                                            0.0, c_rt, full=True)
+              d[f"fpnl{w}"] = pn
+              d[f"win{w}"] = wn                         # profitable completed reversions
+              d[f"wnet{w}"] = wn - ls                   # profitable minus losing reversions
+              d[f"fsh{w}"] = shp                        # formation Sharpe of the rule
+              d[f"rev{w}"] = -S.lag1_autocorr(np.diff(lr, axis=0)[w - 1:])  # daily spread-return reversal
         out.append(pd.DataFrame(d))
     return pd.concat(out, ignore_index=True)
 
@@ -176,11 +206,14 @@ CRIT_COLS = {  # base statistics: column, higher-is-better
     "EMCR": ("zc", True), "EMCR1": ("cyc1", True), "EMCR2": ("cyc2", True),
     "EMCRc": ("cycc", True), "EMCRstable": ("cyc1_min", True), "FormPnL": ("fpnl", True),
 }
-for _w in (5, 10, 20):
+for _w in (3, 5, 10, 20):
     CRIT_COLS[f"EMCR{_w}d"] = (f"zc{_w}", True)
     CRIT_COLS[f"EMCRcyc{_w}d"] = (f"cyc{_w}", True)
     CRIT_COLS[f"FormPnL{_w}d"] = (f"fpnl{_w}", True)
     CRIT_COLS[f"Rev{_w}d"] = (f"rev{_w}", True)
+    CRIT_COLS[f"EMCRwin{_w}d"] = (f"win{_w}", True)
+    CRIT_COLS[f"EMCRnet{_w}d"] = (f"wnet{_w}", True)
+    CRIT_COLS[f"EMCRsh{_w}d"] = (f"fsh{_w}", True)
 
 
 def score(st: pd.DataFrame, crit: str, params: dict) -> np.ndarray:
