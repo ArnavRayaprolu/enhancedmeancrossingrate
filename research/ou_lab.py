@@ -50,6 +50,11 @@ class OUDesign:
     stop: float = 3.5
     hl_mult: float = 2.5
     zmode: str = "spread"        # spread: (S - mean)/std ; ou: Avellaneda-Lee s-score
+    hedge: str = "ols"           # ols: beta from OLS of ln Y on ln X ; tls: total least squares
+                                 # (symmetric in Y and X) ; mkt: both legs first stripped of the
+                                 # equal-weight market factor, then OLS on the residual prices
+    exit_long: float = 0.0       # close a long spread when z >= exit_long (A-L: -0.5)
+    exit_short: float = 0.0      # close a short spread when z <= exit_short (A-L: +0.75)
     n_pairs: int = 20
     max_uses: int = 2
     criterion: str = "EMCRscore"
@@ -112,17 +117,63 @@ def crossing_gaps_cv(z: np.ndarray):
     return cv
 
 
+def hurst(s: np.ndarray, lags=(2, 4, 8, 16, 32)) -> np.ndarray:
+    """Hurst exponent of each column from the scaling of the std of lagged
+    differences: std(s_{t+L} - s_t) ~ L^H. H < 0.5 = mean reverting."""
+    lags = [L for L in lags if L < s.shape[0] // 4]
+    ls = np.log(np.array(lags, float))
+    sd = np.vstack([np.log(np.maximum((s[L:] - s[:-L]).std(0), 1e-12)) for L in lags])
+    lm = ls.mean()
+    return ((ls - lm)[:, None] * (sd - sd.mean(0))).sum(0) / ((ls - lm) ** 2).sum()
+
+
+def hedge_ratio(y, x, mode):
+    if mode == "tls":
+        # total least squares on demeaned series: slope of the first principal axis
+        yc, xc = y - y.mean(0), x - x.mean(0)
+        sxx, syy, sxy = (xc * xc).mean(0), (yc * yc).mean(0), (xc * yc).mean(0)
+        return (syy - sxx + np.sqrt((syy - sxx) ** 2 + 4 * sxy ** 2)) / (2 * np.where(np.abs(sxy) > 1e-12, sxy, 1e-12))
+    xc = x - x.mean(0)
+    return (xc * (y - y.mean(0))).sum(0) / (xc * xc).sum(0)
+
+
+def market_strip(lp: np.ndarray, fit_rows: int | None = None) -> np.ndarray:
+    """Remove each name's exposure to the equal-weight market (cross-sectional mean
+    log return, known at each bar). Market betas are estimated on the first
+    fit_rows rows only (the formation window), so nothing after it is used."""
+    r = np.diff(lp, axis=0); m = r.mean(1, keepdims=True)
+    k = r.shape[0] if fit_rows is None else max(fit_rows - 1, 2)
+    b = (r[:k] * m[:k]).sum(0) / (m[:k] * m[:k]).sum()
+    res = r - m * b
+    return np.vstack([lp[:1], lp[:1] + np.cumsum(res, axis=0)])
+
+
+def band_crossings(z: np.ndarray, band: float = 0.5) -> np.ndarray:
+    """Crossings of the equilibrium counted with hysteresis: a crossing is a move
+    from above +band to below -band or the reverse (small jiggles around 0 are ignored)."""
+    state = np.zeros(z.shape[1]); cnt = np.zeros(z.shape[1])
+    for t in range(z.shape[0]):
+        zt = z[t]
+        up = zt >= band; dn = zt <= -band
+        cnt += ((state == -1) & up) | ((state == 1) & dn)
+        state = np.where(up, 1, np.where(dn, -1, state))
+    return cnt
+
+
 def pair_stats(P: np.ndarray, ia, ib, des: OUDesign) -> pd.DataFrame:
     """Formation statistics for candidate pairs; P = formation prices (F x names)."""
     lp = np.log(P)
+    lps = market_strip(lp) if des.hedge == "mkt" else lp
     years = P.shape[0] / des.bars_per_year
     r = np.diff(lp, axis=0); r = (r - r.mean(0)) / np.where(r.std(0) > 0, r.std(0), 1)
     norm = P / P[0]
     out = []
     for s0 in range(0, len(ia), 20000):
         a, b = ia[s0:s0 + 20000], ib[s0:s0 + 20000]
-        y, x = lp[:, a], lp[:, b]
+        y, x = lps[:, a], lps[:, b]
         p, beta, _ = S.engle_granger(y, x)
+        if des.hedge == "tls":
+            beta = hedge_ratio(y, x, "tls")
         spread = y - beta * x
         bb, kap, th, seq, hl = ou_fit(spread)
         if des.zmode == "ou":
@@ -140,6 +191,14 @@ def pair_stats(P: np.ndarray, ia, ib, des: OUDesign) -> pd.DataFrame:
                  EMCRsuccess=np.where(exc > 0, succ / np.maximum(exc, 1), 0.0),
                  EMCRspeed=dur, EMCRexcess=np.where(implied > 0, zc / implied, np.nan))
         d["EMCRscore"] = d["EMCRtrade"] * d["EMCRsuccess"]
+        d["EMCRband"] = band_crossings(z, 0.5) / years                 # hysteresis crossings per year
+        d["EMCRhl"] = zc * np.where(np.isfinite(hl), hl, 0) / z.shape[0]  # crossings per half-life
+        d["Hurst"] = hurst(spread)
+        # Sarmento-Horta filter: cointegrated, H < 0.5, half-life between 1 day and 1 year,
+        # at least 12 mean crossings per year
+        bpd = des.bars_per_year / 252
+        d["SH"] = ((p < 0.05) & (d["Hurst"] < 0.5) & (hl >= bpd) & (hl <= des.bars_per_year)
+                   & (zc / years >= 12)).astype(float)
         out.append(pd.DataFrame(d))
     st = pd.concat(out, ignore_index=True)
     st["EMCRreg"] = np.nan
@@ -148,7 +207,8 @@ def pair_stats(P: np.ndarray, ia, ib, des: OUDesign) -> pd.DataFrame:
 
 ORIENT = {"Distance": False, "Correlation": True, "Cointegration": False, "HalfLife": False,
           "Kappa": True, "EMCR": True, "EMCRtrade": True, "EMCRsuccess": True,
-          "EMCRscore": True, "EMCRspeed": False, "EMCRexcess": True, "EMCRreg": False}
+          "EMCRscore": True, "EMCRspeed": False, "EMCRexcess": True, "EMCRreg": False,
+          "EMCRband": True, "EMCRhl": False, "Hurst": False, "SH": True}
 
 
 def pct(x, hib):
@@ -157,6 +217,9 @@ def pct(x, hib):
 
 
 def score(st, crit, q=0.5):
+    if crit.startswith("SH|"):
+        rs = score(st, crit[3:], q)
+        return np.where(st["SH"].to_numpy() > 0, rs, 0.0)
     if "|" in crit:
         f, r = crit.split("|")
         fs = score(st, f, q); rs = score(st, r, q)
@@ -180,7 +243,7 @@ def select(sc, a, b, n, max_uses):
 # --------------------------------------------------------------------------- #
 # trading
 # --------------------------------------------------------------------------- #
-def rolling_z(ly, lx, W, zmode):
+def rolling_z(ly, lx, W, zmode, hedge="ols"):
     """Trailing-window beta, spread and z for every bar (rows >= W-1)."""
     T, n = ly.shape
     cs = lambda v: np.cumsum(np.vstack([np.zeros((1, n)), v]), axis=0)
@@ -191,6 +254,8 @@ def rolling_z(ly, lx, W, zmode):
         mx, my = win(sx, t) / W, win(sy, t) / W
         vx = win(sxx, t) / W - mx * mx; cxy = win(sxy, t) / W - mx * my
         bt = cxy / np.maximum(vx, 1e-12)
+        if hedge == "tls":
+            bt = hedge_ratio(ly[t - W + 1:t + 1], lx[t - W + 1:t + 1], "tls")
         sp = ly[t - W + 1:t + 1] - bt * lx[t - W + 1:t + 1]
         if zmode == "ou":
             _, _, th, seq, _ = ou_fit(sp)
@@ -201,7 +266,7 @@ def rolling_z(ly, lx, W, zmode):
     return z, beta
 
 
-def rules(z, entry, stop, maxbars):
+def rules(z, entry, stop, maxbars, exit_long=0.0, exit_short=0.0):
     """Position path (decided each bar) under the entry / zero-exit / time-stop /
     hard-stop rules. z: (K, n). Returns positions in {-1, 0, 1}."""
     K, n = z.shape
@@ -209,7 +274,7 @@ def rules(z, entry, stop, maxbars):
     out = np.zeros((K, n))
     for t in range(K):
         zt = np.nan_to_num(z[t])
-        crossed = ((st > 0) & (zt >= 0)) | ((st < 0) & (zt <= 0))
+        crossed = ((st > 0) & (zt >= exit_long)) | ((st < 0) & (zt <= exit_short))
         st = np.where(crossed, 0, st)
         unblock = blocked & (np.abs(zt) <= 0.25)
         blocked = blocked & ~unblock
@@ -238,10 +303,13 @@ def run_fold(fp, des: OUDesign):
     hl = st["HalfLife"].to_numpy()[ch]
     W = des.F
     sig = fp["sig"]                                   # (F + K, names): formation + test signal prices
-    z, beta = rolling_z(np.log(sig[:, a]), np.log(sig[:, b]), W, des.zmode)
+    lsig = np.log(sig)
+    if des.hedge == "mkt":
+        lsig = market_strip(lsig, fit_rows=W)  # betas from formation rows only
+    z, beta = rolling_z(lsig[:, a], lsig[:, b], W, des.zmode, des.hedge)
     zt = z[W - 1:]                                     # row 0 = last formation bar
     maxbars = np.where(np.isfinite(hl), des.hl_mult * hl, 1e9)
-    dec = rules(zt, des.entry, des.stop, maxbars)
+    dec = rules(zt, des.entry, des.stop, maxbars, des.exit_long, des.exit_short)
     pos = dec[:-1]                                     # executed at next execution price
     ex = fp["ex"]                                      # execution prices: row 0 = last formation bar
     ra = ex[1:, a] / ex[:-1, a] - 1; rb = ex[1:, b] / ex[:-1, b] - 1
