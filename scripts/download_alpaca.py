@@ -168,6 +168,43 @@ def stage_daily():
                                             compression="zstd")
 
 
+ETF_NAME = re.compile(r"\bETF\b|iShares|SPDR|Vanguard|Invesco|WisdomTree|VanEck|Global X|First Trust|"
+                      r"Schwab|\bFund\b", re.I)
+LEVERED = re.compile(r"\b[23]X\b|Ultra|Inverse|Short|Bear|Bull|Daily|Leveraged|-1X|1\.5X", re.I)
+
+
+def stage_daily_full():
+    """Daily OHLCV, 2016 onward, for every common stock (active and inactive) and
+    every unleveraged, non-inverse ETF/fund; split + dividend adjusted.
+    Output: daily_full/{open,high,low,close,volume}_{part}.parquet, etfs.txt."""
+    a = pd.read_csv(OUT / "assets.csv", keep_default_na=False, dtype={"symbol": str})
+    a = a[a["symbol"].astype(str).str.match(TICKER)]
+    stock = a["instrument_ok"].astype(str) == "True"
+    etf = a["name"].str.contains(ETF_NAME.pattern, flags=re.I, regex=True) & \
+        ~a["name"].str.contains(LEVERED.pattern, flags=re.I, regex=True)
+    syms = sorted(set(a.loc[stock | etf, "symbol"].astype(str)))
+    out = OUT / "daily_full"; out.mkdir(exist_ok=True)
+    (out / "etfs.txt").write_text("\n".join(sorted(set(a.loc[etf, "symbol"].astype(str)))) + "\n")
+    print(f"daily_full: {len(syms)} symbols ({int(etf.sum())} ETFs/funds)", flush=True)
+    fields = {k: {} for k in ("open", "high", "low", "close", "volume")}
+    for i in range(0, len(syms), 100):
+        acc = bars(syms[i:i + 100], "1Day", START, end_ts())
+        for s_, b in acc.items():
+            if not b:
+                continue
+            d = pd.DataFrame(b)
+            ix = pd.to_datetime(d["t"], utc=True).dt.tz_convert("America/New_York").dt.normalize().dt.tz_localize(None)
+            for f, col in (("open", "o"), ("high", "h"), ("low", "l"), ("close", "c"), ("volume", "v")):
+                fields[f][s_] = pd.Series(d[col].to_numpy(np.float32), index=ix)
+        if i % 1000 == 0:
+            print(f"  {i + 100}/{len(syms)}", flush=True)
+    for f, dct in fields.items():
+        df = pd.DataFrame(dct).sort_index()
+        cols = sorted(df.columns)
+        for k in range(0, len(cols), 2000):
+            df[cols[k:k + 2000]].to_parquet(out / f"{f}_{k // 2000:02d}.parquet", compression="zstd")
+
+
 def stage_select():
     c = pd.concat([pd.read_parquet(p) for p in sorted((OUT / "daily").glob("close_*.parquet"))], axis=1)
     v = pd.concat([pd.read_parquet(p) for p in sorted((OUT / "daily").glob("volume_*.parquet"))], axis=1)
@@ -320,6 +357,8 @@ if __name__ == "__main__":
         stage_daily()
     elif st == "select":
         stage_select()
+    elif st == "daily_full":
+        stage_daily_full()
     elif st == "hourly":
         stage_hourly(int(sys.argv[2]), int(sys.argv[3]))
     elif st == "hourly2":
