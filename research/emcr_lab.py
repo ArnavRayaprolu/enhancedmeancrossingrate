@@ -516,6 +516,31 @@ def states_ext(z, des):
     return st
 
 
+def cnn_positions(fp, a, b, des):
+    """CNN policy positions (research/cnn_policy.py). One network per fold, trained
+    on the formation data of the fold's 300 most correlated candidate pairs and
+    shared by every selection criterion."""
+    from research import cnn_policy as CP
+    key = ("cnn", des.params.get("cnn_seed", 0), des.params.get("cnn_train", 300))
+    if key not in fp:
+        stt = fp["stats"]
+        top = np.argsort(-stt["corr"].to_numpy())[:des.params.get("cnn_train", 300)]
+        ta, tb = stt["a"].to_numpy()[top], stt["b"].to_numpy()[top]
+        lr_f = np.log(fp["pf"][:, ta]) - np.log(fp["pf"][:, tb])
+        cost = des.cost_scale * fp["half"] + des.fixed_bps / 1e4
+        fp[key] = CP.train(lr_f, 2 * (cost[ta] + cost[tb]), seed=des.params.get("cnn_seed", 0))
+    net = fp[key]
+    closes = np.vstack([fp["pf"], fp["pt"][1:]])
+    lr_all = np.log(closes[:, a]) - np.log(closes[:, b])
+    lr_sig = np.log(fp["sig"][:, a]) - np.log(fp["sig"][:, b])
+    F = fp["pf"].shape[0]
+    lr_f = lr_all[:F]
+    pos = CP.positions(net, lr_all, lr_sig, F - 1, lr_f.mean(0), np.maximum(lr_f.std(0), 1e-8))
+    # a no-trade band avoids paying costs for tiny position changes
+    band = des.params.get("cnn_band", 0.25)
+    return np.round(pos / band) * band
+
+
 def run_fold(fp, des: Design):
     stt = fp["stats"]
     sc = score(stt, des.criterion, des.params)
@@ -523,8 +548,11 @@ def run_fold(fp, des: Design):
     ch = select(sc, a_all, b_all, des.n_pairs, des.max_uses)
     a, b = a_all[ch], b_all[ch]
     mu, sd = stt["mu"].to_numpy()[ch], stt["sd"].to_numpy()[ch]
-    z = z_test(fp, a, b, des, mu, sd)                  # K+1 rows: last formation day + K test days
-    dec = states_ext(z, des)                            # decision at 15:00 of each day
+    if des.signal == "cnn":
+        dec = cnn_positions(fp, a, b, des)
+    else:
+        z = z_test(fp, a, b, des, mu, sd)              # K+1 rows: last formation day + K test days
+        dec = states_ext(z, des)                        # decision at 15:00 of each day
     pos = dec[:-1]                                      # executed at that day's close, earns next day
     K = pos.shape[0]
     pt = fp["pt"]
