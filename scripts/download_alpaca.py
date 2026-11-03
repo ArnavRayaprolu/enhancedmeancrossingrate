@@ -4,7 +4,8 @@ split + dividend adjusted) for the walk-forward study.
     python scripts/download_alpaca.py assets            # active + inactive (delisted) assets
     python scripts/download_alpaca.py daily             # daily bars, every asset, 2016 ->
     python scripts/download_alpaca.py select            # point-in-time liquid superset
-    python scripts/download_alpaca.py hourly K N        # chunk K of N of the superset
+    python scripts/download_alpaca.py hourly K N        # chunk K of N of the superset (slow; superseded)
+    python scripts/download_alpaca.py hourly2 [MIN]     # resumable regular-session download
 
 Needs ALPACA_KEY_ID and ALPACA_SECRET_KEY in the environment (a free Alpaca
 account; paper-trading keys work). Runs on GitHub Actions because the research
@@ -74,7 +75,9 @@ def get(url, params=None):
         except requests.RequestException:
             time.sleep(2 ** attempt); continue
         if r.status_code == 429:
-            time.sleep(max(1.0, float(r.headers.get("Retry-After", 5)))); continue
+            reset = r.headers.get("X-RateLimit-Reset")
+            wait = float(reset) - time.time() + 0.5 if reset else 5.0
+            time.sleep(min(max(1.0, wait), 65.0)); continue
         if r.status_code >= 500:
             time.sleep(2 ** attempt); continue
         if r.status_code == 400:
@@ -222,6 +225,89 @@ def stage_hourly(k: int, n: int):
             g.to_parquet(out / f"{f}_{y}.parquet", compression="zstd")
 
 
+# --------------------------------------------------------------------------- #
+# resumable regular-session download (hourly2)
+# --------------------------------------------------------------------------- #
+TOP_HOURLY = 260          # per-year liquidity cut that gives ~500 symbols in total
+GROUP = 28                # symbols per request: ~8 bars x 28 ~ one ~240-bar page per day
+H2 = OUT / "hourly2"
+
+
+def hourly_symbols() -> list[str]:
+    rk = pd.read_csv(OUT / "universe.csv", index_col=0, keep_default_na=False, na_values=[""],
+                     dtype={"symbol": str})
+    yrs = [c for c in rk.columns if str(c).isdigit()]
+    best = rk[yrs].min(axis=1)
+    return sorted(str(x) for x in best.index[best <= TOP_HOURLY])
+
+
+def git_save(path: Path, msg: str) -> None:
+    import subprocess
+    run = lambda *a: subprocess.run(a, check=False, capture_output=True, text=True)
+    run("git", "add", "-f", str(path))
+    if run("git", "diff", "--cached", "--quiet").returncode == 0:
+        return
+    run("git", "commit", "-q", "-m", msg)
+    br = os.environ.get("BRANCH", "")
+    for i in range(6):
+        if run("git", "pull", "-q", "--rebase", "origin", br).returncode == 0 and \
+                run("git", "push", "-q", "origin", f"HEAD:{br}").returncode == 0:
+            return
+        time.sleep(5 * (i + 1))
+    print("  WARNING: push failed; data kept locally", flush=True)
+
+
+def stage_hourly2(minutes: float = 330.0):
+    """One work unit = (calendar year, group of GROUP symbols). For every
+    trading day of the year one request asks for the group's 1-hour bars
+    between 13:00 and 21:00 UTC, which contains the 09:00-15:00 ET bars in both
+    summer and winter time; extended-hours bars outside that window are never
+    fetched. Each finished unit is written to hourly2/<year>/g<NN>.parquet and
+    committed, so a run that hits the time limit loses at most six units and
+    the next run continues where it stopped."""
+    t_end = time.time() + 60 * minutes
+    syms = hourly_symbols()
+    groups = [syms[i:i + GROUP] for i in range(0, len(syms), GROUP)]
+    c = pd.concat([pd.read_parquet(p) for p in sorted((OUT / "daily").glob("close_*.parquet"))], axis=1)
+    days = pd.DatetimeIndex(c.index[c.notna().sum(axis=1) > 100])
+    print(f"hourly2: {len(syms)} symbols in {len(groups)} groups, {len(days)} trading days "
+          f"{days[0]:%Y-%m-%d}..{days[-1]:%Y-%m-%d}", flush=True)
+    (H2 / "symbols.txt").parent.mkdir(parents=True, exist_ok=True)
+    (H2 / "symbols.txt").write_text("\n".join(syms) + "\n")
+    units = [(y, g) for y in sorted(set(days.year)) for g in range(len(groups))]
+    todo = [(y, g) for y, g in units if not (H2 / str(y) / f"g{g:02d}.parquet").exists()]
+    print(f"units: {len(units)} total, {len(todo)} to do", flush=True)
+    n_new = 0
+    for y, g in todo:
+        if time.time() > t_end - 600:
+            print("time budget reached; stopping cleanly", flush=True)
+            break
+        t0 = time.time(); rows = []
+        for d in days[days.year == y]:
+            ds = d.strftime("%Y-%m-%d")
+            acc = bars(groups[g], "1Hour", f"{ds}T13:00:00Z", f"{ds}T21:00:00Z")
+            for s_, b in acc.items():
+                for x in b:
+                    rows.append((s_, x["t"], x["o"], x["h"], x["l"], x["c"], x["v"]))
+        df = pd.DataFrame(rows, columns=["symbol", "t", "open", "high", "low", "close", "volume"])
+        df["t"] = pd.to_datetime(df["t"], utc=True).dt.tz_localize(None)
+        for k in ("open", "high", "low", "close", "volume"):
+            df[k] = df[k].astype(np.float32)
+        df["symbol"] = df["symbol"].astype("category")
+        out = H2 / str(y) / f"g{g:02d}.parquet"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(out, compression="zstd", index=False)
+        n_new += 1
+        if n_new % 6 == 0:
+            git_save(H2, f"data: alpaca hourly2 through {y} group {g:02d} (GitHub Actions)")
+        done = sum((H2 / str(yy) / f"g{gg:02d}.parquet").exists() for yy, gg in units)
+        print(f"  {y} g{g:02d}: {len(df):,} bars in {time.time() - t0:.0f}s  "
+              f"[{done}/{len(units)} units]", flush=True)
+    left = sum(not (H2 / str(yy) / f"g{gg:02d}.parquet").exists() for yy, gg in units)
+    git_save(H2, f"data: alpaca hourly2 {'complete' if left == 0 else f'{left} units left'} "
+                 f"(GitHub Actions)")
+
+
 if __name__ == "__main__":
     st = sys.argv[1]
     if st == "assets":
@@ -232,5 +318,7 @@ if __name__ == "__main__":
         stage_select()
     elif st == "hourly":
         stage_hourly(int(sys.argv[2]), int(sys.argv[3]))
+    elif st == "hourly2":
+        stage_hourly2(float(sys.argv[2]) if len(sys.argv) > 2 else 330.0)
     else:
         sys.exit(__doc__)
