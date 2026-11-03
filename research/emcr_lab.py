@@ -392,6 +392,8 @@ def pair_ic(D, des: Design, part="dev"):
         cost = des.cost_scale * fp["half"] + des.fixed_bps / 1e4
         y = g - (cost[a] + cost[b]) / 2 * dpos
         for c, (col, hib) in CRIT_COLS.items():
+            if col not in sub:
+                continue
             x = sub[col].replace([np.inf, -np.inf], np.nan).to_numpy(float)
             ok = np.isfinite(x)
             rho = stats.spearmanr(x[ok], y[ok])[0] * (1 if hib else -1)
