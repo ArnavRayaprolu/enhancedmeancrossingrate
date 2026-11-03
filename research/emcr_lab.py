@@ -143,7 +143,45 @@ def rule_pnl(z: np.ndarray, dlr: np.ndarray, entry: float, exit_: float, cost_rt
     return pnl, (st != 0).mean(0), wins, losses, sh
 
 
-def fold_stats(px_f, cost, ia, ib, des: Design):
+def kalman_pair(ya: np.ndarray, xb: np.ndarray, delta: float = 1e-4, theta0=None, ve=None):
+    """Kalman filter for y_t = alpha_t + beta_t x_t + e_t with random-walk
+    coefficients (process noise delta/(1-delta) I), vectorised over pairs.
+    Returns one-step prediction errors e_t, their variances S_t, and the final
+    state (theta, P). Initial state: formation OLS (theta0), P = 1e-3 I."""
+    T, n = ya.shape
+    th = np.zeros((2, n)) if theta0 is None else theta0.copy()
+    P = np.zeros((2, 2, n)); P[0, 0] = P[1, 1] = 1e-3
+    vw = delta / (1 - delta)
+    if ve is None:
+        ve = np.full(n, 1e-4)
+    E = np.empty((T, n)); SS = np.empty((T, n))
+    for t in range(T):
+        P[0, 0] += vw; P[1, 1] += vw
+        h0 = 1.0; h1 = xb[t]
+        yhat = th[0] + th[1] * h1
+        e = ya[t] - yhat
+        Ph0 = P[0, 0] * h0 + P[0, 1] * h1; Ph1 = P[1, 0] * h0 + P[1, 1] * h1
+        Sv = h0 * Ph0 + h1 * Ph1 + ve
+        K0 = Ph0 / Sv; K1 = Ph1 / Sv
+        th[0] += K0 * e; th[1] += K1 * e
+        P00 = P[0, 0] - K0 * Ph0; P01 = P[0, 1] - K0 * Ph1
+        P10 = P[1, 0] - K1 * Ph0; P11 = P[1, 1] - K1 * Ph1
+        P[0, 0], P[0, 1], P[1, 0], P[1, 1] = P00, P01, P10, P11
+        E[t] = e; SS[t] = Sv
+    return E, SS, th, P
+
+
+def vwma(x: np.ndarray, w: np.ndarray, win: int) -> np.ndarray:
+    """Volume-weighted trailing mean of x with weights w (rows <= t)."""
+    cx = np.cumsum(np.vstack([np.zeros((1, x.shape[1])), x * w]), axis=0)
+    cw = np.cumsum(np.vstack([np.zeros((1, x.shape[1])), w]), axis=0)
+    out = np.full_like(x, np.nan, dtype=float)
+    num = cx[win:] - cx[:-win]; den = cw[win:] - cw[:-win]
+    out[win - 1:] = np.where(den > 0, num / np.where(den > 0, den, 1), np.nan)
+    return out
+
+
+def fold_stats(px_f, cost, ia, ib, des: Design, vol_f=None):
     """All candidate statistics on formation closes px_f (F x names)."""
     la = np.log(px_f); n = px_f.shape[0]
     r = np.diff(la, axis=0); r = (r - r.mean(0)) / r.std(0)
@@ -173,6 +211,31 @@ def fold_stats(px_f, cost, ia, ib, des: Design):
                             des.entry, des.exit, c_rt)
         d["fpnl"] = pnl; d["ftin"] = tin
         d["amp"] = sd                                   # spread volatility (log ratio)
+        # variance ratio VR(5): < 1 = mean reverting at the weekly horizon
+        d1 = np.diff(lr, axis=0); d5 = lr[5:] - lr[:-5]
+        d["vr5"] = d5.var(0) / (5 * d1.var(0))
+        # Kalman EMCR: completed reversions of the standardised prediction error
+        if des.params.get("kalman", True):
+            res_ols = (la[:, a] - la[:, a].mean(0)) - beta * (la[:, b] - la[:, b].mean(0))
+            th0 = np.vstack([la[:, a].mean(0) - beta * la[:, b].mean(0), beta])
+            E, SS, _, _ = kalman_pair(la[:, a], la[:, b], des.params.get("kdelta", 1e-7), th0,
+                                      ve=np.maximum(res_ols.var(0), 1e-8))
+            zk = E / np.sqrt(SS)
+            zk = zk[20:]                                   # burn-in
+            d["kzc"] = S.crossing_rate(zk)
+            d["kcyc"] = amp_cycles(zk, np.full(len(a), 1.0))
+            d["kar1"] = S.lag1_autocorr(zk)
+        # moving-average EMCR (the paper's MCR on daily data) and its volume-weighted version
+        f_, s_ = des.params.get("ma_fast", 5), des.params.get("ma_slow", 20)
+        sdl = S.rolling_std(lr, s_); sdl[sdl <= 1e-12] = np.nan
+        zma = (S.rolling_mean(lr, f_) - S.rolling_mean(lr, s_)) / sdl
+        d["mazc"] = S.crossing_rate(zma)
+        d["macyc"] = amp_cycles(np.nan_to_num(zma), np.full(len(a), 1.0))
+        if vol_f is not None:
+            wv = np.sqrt(np.maximum(vol_f[:, a] * px_f[:, a], 0) * np.maximum(vol_f[:, b] * px_f[:, b], 0)) + 1.0
+            zvw = (vwma(lr, wv, f_) - vwma(lr, wv, s_)) / sdl
+            d["vwzc"] = S.crossing_rate(zvw)
+            d["vwcyc"] = amp_cycles(np.nan_to_num(zvw), np.full(len(a), 1.0))
         for w in des.params.get("roll_windows", (5, 10, 20)):
           with np.errstate(divide="ignore", invalid="ignore"):
               m_ = S.rolling_mean(lr, w); sd_ = S.rolling_std(lr, w)
@@ -205,6 +268,10 @@ CRIT_COLS = {  # base statistics: column, higher-is-better
     "Cointegration": ("coint_p", False), "HalfLife": ("halflife", False),
     "EMCR": ("zc", True), "EMCR1": ("cyc1", True), "EMCR2": ("cyc2", True),
     "EMCRc": ("cycc", True), "EMCRstable": ("cyc1_min", True), "FormPnL": ("fpnl", True),
+    "VR": ("vr5", False),
+    "EMCRk": ("kzc", True), "EMCRkcyc": ("kcyc", True), "KalmanAR": ("kar1", False),
+    "EMCRma": ("mazc", True), "EMCRmacyc": ("macyc", True),
+    "EMCRvw": ("vwzc", True), "EMCRvwcyc": ("vwcyc", True),
 }
 for _w in (3, 5, 10, 20):
     CRIT_COLS[f"EMCR{_w}d"] = (f"zc{_w}", True)
@@ -259,7 +326,8 @@ def prepare(D, des: Design):
     key = (D.get("market", "large_hourly"), des.params.get("rank_lo", 0), des.params.get("cost_tiers", False),
            des.params.get("prefilter", 0), des.params.get("min_price", 5.0),
            des.F, des.T, des.top_k, des.entry, des.exit, des.signal, des.params.get("half_bps", 2.0),
-           des.params.get("same"),
+           des.params.get("same"), des.params.get("kdelta", 1e-7), des.params.get("ma_fast", 5),
+           des.params.get("ma_slow", 20),
            des.params.get("cost_mult", 3.0), tuple(des.params.get("roll_windows", (5, 10, 20))))
     if key in _PREP:
         return _PREP[key]
@@ -320,9 +388,11 @@ def prepare(D, des: Design):
         des0 = Design(entry=des.entry, exit=des.exit, params=des.params)
         if des.signal == "rolling":
             des0.params = dict(des.params, roll_entry=des.entry)
-        stt = fold_stats(pf, half + 0.5e-4, ia, ib, des0)
+        VV = D["volume"][names].iloc[:f["t1"]].fillna(0.0)
+        vf = VV.iloc[rows_f].to_numpy(); vt = VV.iloc[rows_t].to_numpy()
+        stt = fold_stats(pf, half + 0.5e-4, ia, ib, des0, vol_f=vf)
         stt = stt[np.isfinite(stt.coint_p) & (stt.sd > 0)].reset_index(drop=True)
-        res.append(dict(fold=f, names=names, pf=pf, pt=pt, sig=st_sig, half=half, stats=stt,
+        res.append(dict(fold=f, names=names, pf=pf, pt=pt, sig=st_sig, half=half, stats=stt, vf=vf, vt=vt,
                         dev=pd.Timestamp(f["test_start"]) < pd.Timestamp(HOLDOUT)))
     _PREP[key] = res
     return res
@@ -336,6 +406,42 @@ def z_test(fp, a, b, des, mu, sd):
     lr_sig = np.log(fp["sig"][:, a]) - np.log(fp["sig"][:, b])
     if des.signal == "static":
         return (lr_sig - mu) / sd
+    if des.signal == "kalman":
+        # run the filter on formation closes, then each test day: z from today's
+        # signal price with yesterday's state, then update with today's close
+        la_f = np.log(fp["pf"][:, a]); lb_f = np.log(fp["pf"][:, b])
+        beta = S.ols_beta(la_f, lb_f)
+        th0 = np.vstack([la_f.mean(0) - beta * lb_f.mean(0), beta])
+        res_ols = (la_f - la_f.mean(0)) - beta * (lb_f - lb_f.mean(0))
+        ve = np.maximum(res_ols.var(0), 1e-8)
+        _, _, th, P = kalman_pair(la_f[:-1], lb_f[:-1], des.params.get("kdelta", 1e-7), th0, ve)
+        closes = np.vstack([fp["pf"][:-1], fp["pt"]])          # pt row 0 = last formation day
+        F1 = fp["pf"].shape[0] - 1
+        z = np.empty_like(lr_sig)
+        vw = des.params.get("kdelta", 1e-7) / (1 - des.params.get("kdelta", 1e-7))
+        for k in range(lr_sig.shape[0]):
+            xs = np.log(fp["sig"][k, b]); ys = np.log(fp["sig"][k, a])
+            Pp = P.copy(); Pp[0, 0] += vw; Pp[1, 1] += vw
+            Sv = Pp[0, 0] + 2 * Pp[0, 1] * xs + Pp[1, 1] * xs * xs + ve
+            z[k] = (ys - th[0] - th[1] * xs) / np.sqrt(Sv)
+            _, _, th, P = _kstep(np.log(closes[F1 + k, a]), np.log(closes[F1 + k, b]), th, P, vw, ve)
+        return z
+    if des.signal == "vwma":
+        f_, s_ = des.params.get("ma_fast", 5), des.params.get("ma_slow", 20)
+        closes = np.vstack([fp["pf"], fp["pt"][1:]])
+        vols = np.vstack([fp["vf"], fp["vt"][1:]])
+        F = fp["pf"].shape[0]
+        z = np.empty_like(lr_sig)
+        for k in range(lr_sig.shape[0]):
+            hist_p = closes[F - 1 + k - s_ + 1:F - 1 + k + 1].copy()
+            hist_v = vols[F - 1 + k - s_:F - 1 + k].copy()     # volumes known before today's decision
+            hist_p[-1] = fp["sig"][k]                            # today's signal price
+            lr_h = np.log(hist_p[:, a]) - np.log(hist_p[:, b])
+            w = np.sqrt(np.maximum(hist_v[:, a] * hist_p[:, a], 0) * np.maximum(hist_v[:, b] * hist_p[:, b], 0)) + 1.0
+            fast = (lr_h[-f_:] * w[-f_:]).sum(0) / w[-f_:].sum(0)
+            slow = (lr_h * w).sum(0) / w.sum(0)
+            z[k] = (fast - slow) / lr_h.std(0, ddof=1)
+        return z
     # rolling: mean/sd of the w daily closes up to the PREVIOUS day, applied to
     # today's 15:00 log ratio
     closes = np.vstack([fp["pf"], fp["pt"][1:]])
@@ -346,6 +452,20 @@ def z_test(fp, a, b, des, mu, sd):
         hist = lr_close[F - 1 + k - w:F - 1 + k]
         z[k] = (lr_sig[k] - hist.mean(0)) / hist.std(0)
     return z
+
+
+def _kstep(y, x, th, P, vw, ve):
+    """One Kalman update with observation (y, x); returns (None, None, th, P)."""
+    P = P.copy(); P[0, 0] += vw; P[1, 1] += vw
+    Ph0 = P[0, 0] + P[0, 1] * x; Ph1 = P[1, 0] + P[1, 1] * x
+    Sv = Ph0 + x * Ph1 + ve
+    e = y - th[0] - th[1] * x
+    K0 = Ph0 / Sv; K1 = Ph1 / Sv
+    th = np.vstack([th[0] + K0 * e, th[1] + K1 * e])
+    P00 = P[0, 0] - K0 * Ph0; P01 = P[0, 1] - K0 * Ph1
+    P10 = P[1, 0] - K1 * Ph0; P11 = P[1, 1] - K1 * Ph1
+    P[0, 0], P[0, 1], P[1, 0], P[1, 1] = P00, P01, P10, P11
+    return None, None, th, P
 
 
 def states_ext(z, des):
@@ -390,7 +510,10 @@ def run_fold(fp, des: Design):
     else:
         w = E.pair_weights(pos, np.ones(n), "capped", 2.0 / max(n, 1))
     cost = des.cost_scale * fp["half"] + des.fixed_bps / 1e4
-    res = E.run_book(pos, w, ra, rb, np.full(n, 0.5), cost[a], cost[b], des.borrow_pa / BPY)
+    hedge_a = np.full(n, 0.5)
+    if des.signal == "kalman":
+        hedge_a = 1 / (1 + np.clip(stt["beta"].to_numpy()[ch], 0.2, 5.0))
+    res = E.run_book(pos, w, ra, rb, hedge_a, cost[a], cost[b], des.borrow_pa / BPY)
     return res, ch
 
 
