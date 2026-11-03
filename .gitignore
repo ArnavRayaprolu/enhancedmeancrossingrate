@@ -15,3 +15,4 @@ results/dev_search/log.csv
 results/iterations/*.pkl
 results/raw/
 data/alpaca_prepared.pkl
+data/alpaca_daily_lab.pkl
