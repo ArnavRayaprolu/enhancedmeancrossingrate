@@ -1,0 +1,37 @@
+name: alpaca-m5-etf
+
+# Resumable download of regular-session 5-minute bars (data/alpaca/m5_symbols.txt).
+# point-in-time liquid universe (scripts/download_alpaca.py hourly2).
+# Progress is committed every few units; edit .github/alpaca-m5-etf-run.txt
+# to start or resume.
+
+on:
+  push:
+    paths:
+      - .github/alpaca-m5-etf-run.txt
+
+permissions:
+  contents: write
+
+concurrency:
+  group: alpaca-m5-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pandas numpy pyarrow requests
+      - run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+      - run: python scripts/download_alpaca.py m5 330 m5_etf_symbols.txt m5_etf

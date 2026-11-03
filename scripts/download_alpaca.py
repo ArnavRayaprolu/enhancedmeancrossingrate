@@ -356,13 +356,14 @@ M5 = OUT / "m5"
 M5_START = "2024-01-01"
 
 
-def stage_m5(minutes: float = 330.0):
+def stage_m5(minutes: float = 330.0, symfile: str = "m5_symbols.txt", outdir: str = "m5"):
     """5-minute bars, 09:30-16:00 ET, for the symbols in data/alpaca/m5_symbols.txt
     (liquid S&P 500 names with same-sub-industry peers), 2024 onward. One unit =
     (calendar month, group of 28 symbols); one request per trading day per group;
     units are written to m5/<YYYY-MM>/g<NN>.parquet and committed every 6 units."""
     t_end = time.time() + 60 * minutes
-    syms = (OUT / "m5_symbols.txt").read_text().split()
+    M5 = OUT / outdir
+    syms = (OUT / symfile).read_text().split()
     groups = [syms[i:i + GROUP] for i in range(0, len(syms), GROUP)]
     c = pd.concat([pd.read_parquet(p) for p in sorted((OUT / "daily").glob("close_*.parquet"))], axis=1)
     days = pd.DatetimeIndex(c.index[c.notna().sum(axis=1) > 100])
@@ -396,10 +397,10 @@ def stage_m5(minutes: float = 330.0):
         df.to_parquet(out, compression="zstd", index=False)
         n_new += 1
         if n_new % 6 == 0:
-            git_save(M5, f"data: alpaca m5 through {m} group {g:02d} (GitHub Actions)")
+            git_save(M5, f"data: alpaca {outdir} through {m} group {g:02d} (GitHub Actions)")
         print(f"  {m} g{g:02d}: {len(df):,} bars in {time.time() - t0:.0f}s", flush=True)
     left = sum(not (M5 / mm / f"g{gg:02d}.parquet").exists() for mm, gg in units)
-    git_save(M5, f"data: alpaca m5 {'complete' if left == 0 else f'{left} units left'} (GitHub Actions)")
+    git_save(M5, f"data: alpaca {outdir} {'complete' if left == 0 else f'{left} units left'} (GitHub Actions)")
 
 
 if __name__ == "__main__":
@@ -411,7 +412,9 @@ if __name__ == "__main__":
     elif st == "select":
         stage_select()
     elif st == "m5":
-        stage_m5(float(sys.argv[2]) if len(sys.argv) > 2 else 330.0)
+        stage_m5(float(sys.argv[2]) if len(sys.argv) > 2 else 330.0,
+                 sys.argv[3] if len(sys.argv) > 3 else "m5_symbols.txt",
+                 sys.argv[4] if len(sys.argv) > 4 else "m5")
     elif st == "daily_full":
         stage_daily_full()
     elif st == "hourly":
