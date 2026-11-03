@@ -317,7 +317,7 @@ def prepare(D, des: Design):
         stt = fold_stats(pf, half + 0.5e-4, ia, ib, des0)
         stt = stt[np.isfinite(stt.coint_p) & (stt.sd > 0)].reset_index(drop=True)
         res.append(dict(fold=f, names=names, pf=pf, pt=pt, sig=st_sig, half=half, stats=stt,
-                        dev=f["test_start"] < HOLDOUT))
+                        dev=pd.Timestamp(f["test_start"]) < pd.Timestamp(HOLDOUT)))
     _PREP[key] = res
     return res
 
