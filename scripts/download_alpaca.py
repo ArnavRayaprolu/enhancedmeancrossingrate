@@ -349,6 +349,59 @@ def stage_hourly2(minutes: float = 330.0):
                  f"(GitHub Actions)")
 
 
+# --------------------------------------------------------------------------- #
+# resumable regular-session 5-minute download (m5)
+# --------------------------------------------------------------------------- #
+M5 = OUT / "m5"
+M5_START = "2024-01-01"
+
+
+def stage_m5(minutes: float = 330.0):
+    """5-minute bars, 09:30-16:00 ET, for the symbols in data/alpaca/m5_symbols.txt
+    (liquid S&P 500 names with same-sub-industry peers), 2024 onward. One unit =
+    (calendar month, group of 28 symbols); one request per trading day per group;
+    units are written to m5/<YYYY-MM>/g<NN>.parquet and committed every 6 units."""
+    t_end = time.time() + 60 * minutes
+    syms = (OUT / "m5_symbols.txt").read_text().split()
+    groups = [syms[i:i + GROUP] for i in range(0, len(syms), GROUP)]
+    c = pd.concat([pd.read_parquet(p) for p in sorted((OUT / "daily").glob("close_*.parquet"))], axis=1)
+    days = pd.DatetimeIndex(c.index[c.notna().sum(axis=1) > 100])
+    days = days[days >= pd.Timestamp(M5_START)]
+    months = sorted(set(days.strftime("%Y-%m")))
+    units = [(m, g) for m in months for g in range(len(groups))]
+    todo = [(m, g) for m, g in units if not (M5 / m / f"g{g:02d}.parquet").exists()]
+    print(f"m5: {len(syms)} symbols, {len(groups)} groups, {len(days)} days, "
+          f"{len(units)} units, {len(todo)} to do", flush=True)
+    n_new = 0
+    for m, g in todo:
+        if time.time() > t_end - 600:
+            print("time budget reached; stopping cleanly", flush=True)
+            break
+        t0 = time.time(); rows = []
+        for d in days[days.strftime("%Y-%m") == m]:
+            ds = d.strftime("%Y-%m-%d")
+            a = pd.Timestamp(f"{ds} 09:30", tz="America/New_York").tz_convert("UTC")
+            b = pd.Timestamp(f"{ds} 15:56", tz="America/New_York").tz_convert("UTC")
+            acc = bars(groups[g], "5Min", a.strftime("%Y-%m-%dT%H:%M:%SZ"), b.strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for s_, bl in acc.items():
+                for x in bl:
+                    rows.append((s_, x["t"], x["o"], x["h"], x["l"], x["c"], x["v"]))
+        df = pd.DataFrame(rows, columns=["symbol", "t", "open", "high", "low", "close", "volume"])
+        df["t"] = pd.to_datetime(df["t"], utc=True).dt.tz_localize(None)
+        for k in ("open", "high", "low", "close", "volume"):
+            df[k] = df[k].astype(np.float32)
+        df["symbol"] = df["symbol"].astype("category")
+        out = M5 / m / f"g{g:02d}.parquet"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(out, compression="zstd", index=False)
+        n_new += 1
+        if n_new % 6 == 0:
+            git_save(M5, f"data: alpaca m5 through {m} group {g:02d} (GitHub Actions)")
+        print(f"  {m} g{g:02d}: {len(df):,} bars in {time.time() - t0:.0f}s", flush=True)
+    left = sum(not (M5 / mm / f"g{gg:02d}.parquet").exists() for mm, gg in units)
+    git_save(M5, f"data: alpaca m5 {'complete' if left == 0 else f'{left} units left'} (GitHub Actions)")
+
+
 if __name__ == "__main__":
     st = sys.argv[1]
     if st == "assets":
@@ -357,6 +410,8 @@ if __name__ == "__main__":
         stage_daily()
     elif st == "select":
         stage_select()
+    elif st == "m5":
+        stage_m5(float(sys.argv[2]) if len(sys.argv) > 2 else 330.0)
     elif st == "daily_full":
         stage_daily_full()
     elif st == "hourly":
