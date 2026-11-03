@@ -108,6 +108,9 @@ def write(bars, picks, folds, diag, reps: int = 999):
     L.append(md(sub, 2, index=True))
     L.append("\n## R7 / R8 - Ratio vs hedged spread; one-at-a-time robustness (Sharpe, base costs)\n")
     L.append(md(grid, 2, index=True))
+    L.append("\nNote: the selected pairs are the top 20 of ~31,000 candidates, so their percentile "
+             "scores are all within ~0.001 of 1. Rank weights (Eq. 8 and 'rank') are therefore "
+             "almost equal weights; 'w_rank_fixed' and 'w_equal' coincide to two decimals.\n")
     L.append("\n## m4 / m7 - Composition and concentration of the books (primary)\n")
     L.append(md(comp)); L.append(""); L.append(md(conc))
     (out / "REPORT.md").write_text("\n".join(L) + "\n")
