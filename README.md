@@ -20,9 +20,12 @@ python -m pytest -q tests                  # integrity audit
 
 Alpaca Market Data, US equities, 1-hour bars 2016 onward, split and dividend
 adjusted (SIP feed). Active and inactive (delisted) assets are listed; every
-symbol that ranked in the 1,500 most liquid common stocks in any calendar year
-is downloaded, and each walk-forward window picks its own universe from
-formation data only (`mcr/data.py`, `scripts/download_alpaca.py`).
+symbol that ranked among the 260 most liquid common stocks in any calendar year
+(on that year's own daily data) is downloaded at hourly frequency - 500 symbols,
+about 30 of them since delisted - and each walk-forward window trades all pairs
+of its 250 most liquid names chosen on formation data only (`mcr/data.py`,
+`scripts/download_alpaca.py`). The free Alpaca plan returns ~240 bars per
+request at 200 requests/minute, which sets the size of the hourly universe.
 
 ## Where each reviewer comment is handled
 

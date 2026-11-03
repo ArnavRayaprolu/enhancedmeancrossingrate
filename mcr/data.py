@@ -4,7 +4,8 @@ Source: Alpaca Market Data API (SIP feed, adjustment='all'), downloaded on
 GitHub Actions by scripts/download_alpaca.py into data/alpaca/.
 
 Preparation (R6, m5)
-  * bars: Alpaca's native clock-hour bars that start 09:00 ... 15:00 ET, seven
+  * bars: Alpaca's native clock-hour bars (data/alpaca/hourly2/<year>/g<NN>.parquet,
+    long format) that start 09:00 ... 15:00 ET, seven
     per day; bar t's close is the price at the end of its hour (the 15:00 bar
     closes at the 16:00 close). The 09:00 bar also contains 09:00-09:30
     pre-market trades. Dates on which fewer than half the usual number of
@@ -17,9 +18,10 @@ Preparation (R6, m5)
     SPAC shells, warrants, units, rights, preferreds and notes are removed by
     security name.
   * survivorship (R6): the asset list includes INACTIVE (delisted/merged)
-    symbols; the download universe is the union over calendar years of each
-    year's 1,500 most liquid names on that year's data, and every fold picks
-    its own universe from formation data only. Residual bias: Alpaca's list of
+    symbols; the hourly universe is the union over calendar years of each
+    year's 260 most liquid common stocks on that year's own daily data (500
+    symbols, of which ~30 are now delisted), and every fold picks its own
+    universe from formation data only. Residual bias: Alpaca's list of
     inactive symbols is incomplete for early delistings, and a reused ticker
     maps two companies to one symbol.
 """
@@ -36,25 +38,24 @@ CACHE = ROOT / "data" / "alpaca_prepared.pkl"
 FIELDS = ("open", "high", "low", "close", "volume")
 
 
-def _panel(field: str) -> pd.DataFrame:
-    cols = []
-    for c in sorted(p for p in (DATA / "hourly").iterdir() if p.is_dir()):
-        parts = sorted(c.glob(f"{field}_*.parquet"))
-        if parts:
-            cols.append(pd.concat([pd.read_parquet(p) for p in parts], axis=0))
-    df = pd.concat(cols, axis=1).sort_index()
-    # a backup download can repeat symbols of another chunk: keep the first copy
-    df = df.loc[:, ~df.columns.duplicated()]
-    df.index = pd.DatetimeIndex(df.index)
-    if df.index.tz is None:
-        df.index = df.index.tz_localize("UTC")
-    return df.astype("float32")
+def _panels() -> dict[str, pd.DataFrame]:
+    """Wide (time x symbol) panels from the long hourly2/<year>/g<NN>.parquet
+    files; only bars that START 09:00 ... 15:00 America/New_York are kept."""
+    parts = sorted((DATA / "hourly2").glob("*/g*.parquet"))
+    df = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
+    t = pd.DatetimeIndex(df["t"]).tz_localize("UTC")
+    h = t.tz_convert("America/New_York").hour
+    df = df[(h >= 9) & (h <= 15)]
+    df = df.assign(t=t[(h >= 9) & (h <= 15)], symbol=df["symbol"].astype(str))
+    df = df.drop_duplicates(["t", "symbol"], keep="last")
+    return {f: df.pivot(index="t", columns="symbol", values=f).sort_index().astype("float32")
+            for f in FIELDS}
 
 
 def load(cache: bool = True) -> dict:
     if cache and CACHE.exists():
         return pd.read_pickle(CACHE)
-    f = {k: _panel(k) for k in FIELDS}
+    f = _panels()
     cols = f["close"].columns
     for k in f:
         f[k] = f[k].reindex(columns=cols)

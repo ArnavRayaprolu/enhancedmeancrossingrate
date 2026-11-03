@@ -58,7 +58,8 @@ HEADLINE_COST = "base"
 class Config:
     label: str = "primary"
     universe: str = "us_liquid"       # us_liquid | sp500
-    top_k: int = 1000                 # liquid universe size (formation dollar volume)
+    top_k: int = 250                  # liquid universe size (formation dollar volume); the
+                                      # hourly download holds each year's 260 most liquid names
     min_price: float = 5.0
     min_vol: float = 0.10             # annualised formation volatility; drops SPAC shells
     min_coverage: float = 0.95        # share of formation bars with a trade
@@ -107,7 +108,7 @@ GRID_SPEC = [
     ("complete_case", dict(min_coverage=1.0, ffill=False)),
     ("delay_1bar", dict(lag=1)),
     ("windows_60_21", dict(train_days=60, test_days=21)),
-    ("universe_500", dict(top_k=500)),
+    ("universe_125", dict(top_k=125)),
     ("sp500_sector", dict(universe="sp500", sector_pairs=True)),
     ("engine_original", dict(engine="original")),
 ]
