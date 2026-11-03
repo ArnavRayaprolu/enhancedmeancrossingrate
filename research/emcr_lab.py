@@ -255,7 +255,7 @@ _PREP: dict = {}
 
 
 def prepare(D, des: Design):
-    key = (des.F, des.T, des.top_k, des.entry, des.exit, des.signal,
+    key = (des.F, des.T, des.top_k, des.entry, des.exit, des.signal, des.params.get("half_bps", 2.0),
            des.params.get("cost_mult", 3.0), tuple(des.params.get("roll_windows", (5, 10, 20))))
     if key in _PREP:
         return _PREP[key]
@@ -276,7 +276,10 @@ def prepare(D, des: Design):
         st_sig = np.where(np.isfinite(st_sig), st_sig, pt)
         hf = D["high"][names].iloc[rows_f].ffill().bfill().to_numpy()
         lf = D["low"][names].iloc[rows_f].ffill().bfill().to_numpy()
-        half = np.clip(MD.abdi_ranaldo(pf, hf, lf) / 2, 0.5e-4, 50e-4)
+        # flat half-spread for every name (daily Abdi-Ranaldo estimates for large caps
+        # are dominated by volatility noise: median 9 bps, 2020 ~28 bps); 2 bps is the
+        # typical effective half-spread of the 250 most liquid US stocks after 2015
+        half = np.full(len(names), des.params.get("half_bps", 2.0) / 1e4)
         ia, ib = np.triu_indices(len(names), 1)
         des0 = Design(entry=des.entry, exit=des.exit, params=des.params)
         if des.signal == "rolling":
