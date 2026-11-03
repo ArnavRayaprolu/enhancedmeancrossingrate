@@ -18,3 +18,4 @@ data/alpaca_prepared.pkl
 data/alpaca_daily_lab.pkl
 research/trials_live.csv
 data/alpaca_daily_full.pkl
+research/market_scan_wf_*.csv
