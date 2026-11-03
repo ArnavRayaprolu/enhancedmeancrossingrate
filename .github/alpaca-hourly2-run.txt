@@ -1,1 +1,2 @@
 hourly2 run 1 2026-11-03T02:18:09Z
+hourly2 run 2 2026-11-03T02:33:21Z: DST-aware window

@@ -260,9 +260,10 @@ def git_save(path: Path, msg: str) -> None:
 def stage_hourly2(minutes: float = 330.0):
     """One work unit = (calendar year, group of GROUP symbols). For every
     trading day of the year one request asks for the group's 1-hour bars
-    between 13:00 and 21:00 UTC, which contains the 09:00-15:00 ET bars in both
-    summer and winter time; extended-hours bars outside that window are never
-    fetched. Each finished unit is written to hourly2/<year>/g<NN>.parquet and
+    starting 09:00 ... 15:00 America/New_York (the window follows daylight
+    saving time), so 7 bars x 28 symbols fit in about one ~240-bar page and
+    extended-hours bars are never fetched (the first units, fetched with a
+    13:00-21:00 UTC window, carry a few extra bars that the loader drops). Each finished unit is written to hourly2/<year>/g<NN>.parquet and
     committed, so a run that hits the time limit loses at most six units and
     the next run continues where it stopped."""
     t_end = time.time() + 60 * minutes
@@ -285,7 +286,10 @@ def stage_hourly2(minutes: float = 330.0):
         t0 = time.time(); rows = []
         for d in days[days.year == y]:
             ds = d.strftime("%Y-%m-%d")
-            acc = bars(groups[g], "1Hour", f"{ds}T13:00:00Z", f"{ds}T21:00:00Z")
+            a = pd.Timestamp(f"{ds} 09:00", tz="America/New_York").tz_convert("UTC")
+            b = pd.Timestamp(f"{ds} 15:01", tz="America/New_York").tz_convert("UTC")
+            acc = bars(groups[g], "1Hour", a.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                       b.strftime("%Y-%m-%dT%H:%M:%SZ"))
             for s_, b in acc.items():
                 for x in b:
                     rows.append((s_, x["t"], x["o"], x["h"], x["l"], x["c"], x["v"]))
