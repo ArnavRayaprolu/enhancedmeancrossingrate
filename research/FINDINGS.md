@@ -75,3 +75,20 @@ Cointegration -0.34, Distance -0.06). DM (Newey-West / bootstrap): vs Cointegrat
 vs Distance p = 0.012, vs Correlation p = 0.13. Deflated Sharpe over all 5,706 logged trials: 0.00.
 Performance is concentrated in 2016-2020 (yearly Sharpe 1.5, -0.3, 1.8, 3.1, 2.8) and is
 weak or negative after 2021.
+
+## Phase 3 - raw price-ratio EMCR, volume-weighted MA combinations, CNN trading policy
+
+* Raw price-ratio criteria (no z-score): crossings of P_A/P_B around its formation mean and
+  around its 10/20/60-day moving averages, and completed reversions after a 2% / 5% move.
+  Volume-weighted fast/slow MA crossing criteria for (3,10), (5,20), (10,40), (20,60) days,
+  plain and after a 1% gap (`research/results/raw_vw_scan_*.csv`).
+  - Large caps, same sub-industry: Correlation|VW10_40c 0.69, Correlation|RawMean2pc 0.61,
+    Correlation|VW5_20c 0.60 vs Correlation 0.50; stand-alone raw/VW criteria <= 0.39.
+  - Large caps, all pairs: Correlation 0.48 best; best raw criterion RawMA10 0.37.
+  - Small caps: Correlation|VW5_20c 0.29, Correlation 0.22.
+* CNN trading policy (`research/cnn_policy.py`; after Guijarro-Ordonez, Pelger & Zanotti and
+  Eggebrecht & Luetkebohmert 2023): 1-D CNN on the last 30 days of static and rolling z,
+  position in [-1, 1], trained per fold on formation data to maximise net Sharpe, shared by
+  all criteria (`research/results/cnn_scan_*.csv`). Sharpe between -0.50 and +0.32 (sub-
+  industry) and -0.48 and +0.16 (all pairs), returns below 0.3%/yr: the network learns to
+  hold small or no positions, consistent with the absence of a learnable edge after costs.
