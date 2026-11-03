@@ -16,3 +16,4 @@ results/iterations/*.pkl
 results/raw/
 data/alpaca_prepared.pkl
 data/alpaca_daily_lab.pkl
+research/trials_live.csv

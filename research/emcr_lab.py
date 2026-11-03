@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT))
 from mcr import data as MD, engine as E, signals as S  # noqa: E402
 
 HOLDOUT = pd.Timestamp("2023-01-01").date()
-TRIALS = ROOT / "research" / "trials.csv"
+TRIALS = ROOT / "research" / "trials_live.csv"   # ignored; snapshot to trials.csv when committing
 CACHE = ROOT / "data" / "alpaca_daily_lab.pkl"
 BPY = 252
 
