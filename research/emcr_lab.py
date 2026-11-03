@@ -366,12 +366,14 @@ def run_fold(fp, des: Design):
 
 def evaluate(D, des: Design, part="dev", log=True):
     prep = prepare(D, des)
-    nets, gross, turn = [], [], []
+    nets, gross, turn, dts = [], [], [], []
+    dates = D["px"].index
     for fp in prep:
         if (part == "dev") != fp["dev"] and part != "all":
             continue
         res, _ = run_fold(fp, des)
         nets.append(res["net"]); gross.append(res["gross"]); turn.append(res["turn"])
+        dts.append(dates[fp["fold"]["f1"]:fp["fold"]["t1"]])
     net = np.concatenate(nets); g = np.concatenate(gross); u = np.concatenate(turn)
     sh = net.mean() / net.std() * np.sqrt(BPY) if net.std() > 0 else np.nan
     out = dict(label=des.label, part=part, criterion=des.criterion, sharpe=sh,
@@ -380,7 +382,7 @@ def evaluate(D, des: Design, part="dev", log=True):
                days=len(net), design=str({k: v for k, v in asdict(des).items() if k != "label"}))
     if log:
         pd.DataFrame([out]).to_csv(TRIALS, mode="a", header=not TRIALS.exists(), index=False)
-    return out, net
+    return out, pd.Series(net, index=pd.Index(np.concatenate(dts), name="date"))
 
 
 def pair_ic(D, des: Design, part="dev"):
