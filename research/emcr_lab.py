@@ -225,6 +225,27 @@ def fold_stats(px_f, cost, ia, ib, des: Design, vol_f=None):
             d["kzc"] = S.crossing_rate(zk)
             d["kcyc"] = amp_cycles(zk, np.full(len(a), 1.0))
             d["kar1"] = S.lag1_autocorr(zk)
+        # ---- raw price-ratio EMCR (no z-score): crossings of r = (P_A/P_B)/(P_A0/P_B0)
+        # around its formation mean and around its own trailing moving averages; the
+        # amplitude-filtered versions require a plain percentage excursion first
+        if des.params.get("raw", True):
+            rr = px_f[:, a] / px_f[:, b]; rr = rr / rr[0]
+            dev = rr / rr.mean(0) - 1
+            d["rawzc"] = S.crossing_rate(dev)
+            for pc in (0.02, 0.05):
+                d[f"rawc{int(pc * 100)}"] = amp_cycles(dev, np.full(len(a), pc))
+            for w in (10, 20, 60):
+                mw = S.rolling_mean(rr, w)
+                dw = rr / mw - 1
+                d[f"rawma{w}"] = S.crossing_rate(dw)
+                d[f"rawmac{w}"] = amp_cycles(np.nan_to_num(dw), np.full(len(a), 0.02))
+        # ---- volume-weighted fast vs slow MAs of the ratio, several combinations
+        if vol_f is not None and des.params.get("vw_combos", True):
+            wv0 = np.sqrt(np.maximum(vol_f[:, a] * px_f[:, a], 0) * np.maximum(vol_f[:, b] * px_f[:, b], 0)) + 1.0
+            for f2, s2 in ((3, 10), (5, 20), (10, 40), (20, 60)):
+                gap = vwma(lr, wv0, f2) - vwma(lr, wv0, s2)          # log-ratio units = % gap
+                d[f"vw{f2}_{s2}"] = S.crossing_rate(gap)
+                d[f"vwc{f2}_{s2}"] = amp_cycles(np.nan_to_num(gap), np.full(len(a), 0.01))
         # moving-average EMCR (the paper's MCR on daily data) and its volume-weighted version
         f_, s_ = des.params.get("ma_fast", 5), des.params.get("ma_slow", 20)
         sdl = S.rolling_std(lr, s_); sdl[sdl <= 1e-12] = np.nan
@@ -272,7 +293,14 @@ CRIT_COLS = {  # base statistics: column, higher-is-better
     "EMCRk": ("kzc", True), "EMCRkcyc": ("kcyc", True), "KalmanAR": ("kar1", False),
     "EMCRma": ("mazc", True), "EMCRmacyc": ("macyc", True),
     "EMCRvw": ("vwzc", True), "EMCRvwcyc": ("vwcyc", True),
+    "RawMean": ("rawzc", True), "RawMean2pc": ("rawc2", True), "RawMean5pc": ("rawc5", True),
 }
+for _w in (10, 20, 60):
+    CRIT_COLS[f"RawMA{_w}"] = (f"rawma{_w}", True)
+    CRIT_COLS[f"RawMA{_w}c"] = (f"rawmac{_w}", True)
+for _f, _s in ((3, 10), (5, 20), (10, 40), (20, 60)):
+    CRIT_COLS[f"VW{_f}_{_s}"] = (f"vw{_f}_{_s}", True)
+    CRIT_COLS[f"VW{_f}_{_s}c"] = (f"vwc{_f}_{_s}", True)
 for _w in (3, 5, 10, 20):
     CRIT_COLS[f"EMCR{_w}d"] = (f"zc{_w}", True)
     CRIT_COLS[f"EMCRcyc{_w}d"] = (f"cyc{_w}", True)

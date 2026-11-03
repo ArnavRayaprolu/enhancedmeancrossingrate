@@ -22,3 +22,4 @@ research/market_scan_wf_*.csv
 research/innov_scan_*.csv
 research/breadth_scan_*.csv
 research/basket_scan.csv
+research/raw_vw_scan_*.csv
