@@ -252,6 +252,7 @@ def select(sc, a, b, n, max_uses):
 # fold preparation (cached per (F, T, top_k))
 # --------------------------------------------------------------------------- #
 _PREP: dict = {}
+BADPRINTS = [0]          # count of test-window one-day moves >= 3x set to zero
 
 
 def prepare(D, des: Design):
@@ -271,6 +272,11 @@ def prepare(D, des: Design):
         ok = D["instrument_ok"].reindex(pxf.columns).fillna(False).astype(bool) & (cov >= 0.95) \
             & (pxf.median() >= des.params.get("min_price", 5.0))
         dv = (pxf * D["volume"].iloc[rows_f]).median()[ok.to_numpy()].sort_values(ascending=False)
+        # data-quality screen: no one-day move of 3x or more (up or down) inside the
+        # formation window (corporate-action / bad-print artefacts, e.g. AQB Jan 2017)
+        lr_f = np.log(pxf.ffill()).diff().abs()
+        clean = (lr_f.max() < np.log(3)).reindex(dv.index).fillna(False).to_numpy()
+        dv = dv[clean]
         lo = des.params.get("rank_lo", 0)
         names = sorted(dv.index[lo:lo + des.top_k])
         if len(names) < 20:
@@ -375,6 +381,9 @@ def run_fold(fp, des: Design):
     K = pos.shape[0]
     pt = fp["pt"]
     ra = pt[1:, a] / pt[:-1, a] - 1; rb = pt[1:, b] / pt[:-1, b] - 1
+    bad = lambda r: np.abs(np.log1p(r)) >= np.log(3)
+    BADPRINTS[0] += int(bad(ra).sum() + bad(rb).sum())
+    ra = np.where(bad(ra), 0.0, ra); rb = np.where(bad(rb), 0.0, rb)
     n = len(ch)
     if des.weighting == "equal":
         w = np.where(pos != 0, 1.0 / max(n, 1), 0.0)
