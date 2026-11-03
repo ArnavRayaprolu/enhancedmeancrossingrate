@@ -142,8 +142,8 @@ def main(dataset, same_arg):
             for zmode in ("spread", "ou"):
                 base = O.OUDesign(F=dz["F"], T=dz["T"], entry=entry, zmode=zmode, bars_per_year=252 * bpd)
                 for c in CRITS:
-                    for n in (10, 20, 50):
-                        des = replace(base, criterion=c, n_pairs=n, max_uses=2 if n <= 20 else 4)
+                    for n in (5, 10, 20, 50):
+                        des = replace(base, criterion=c, n_pairs=n, max_uses=1 if n <= 10 else (2 if n <= 20 else 4))
                         o, daily = evaluate(D, des, same, top_k)
                         rows.append(dict(dataset=dataset, same=same_arg, F_days=dz["F"] // bpd, T_days=dz["T"] // bpd,
                                          entry=entry, zmode=zmode, n=n, crit=c, **o))
