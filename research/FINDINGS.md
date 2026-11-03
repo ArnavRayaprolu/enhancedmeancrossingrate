@@ -88,3 +88,26 @@ weak or negative after 2021.
   - Small caps: Correlation|VW5_20c 0.29, Correlation 0.22.
 * A CNN trading policy was tried and removed at the author's request (it held small or no
   positions; Sharpe between -0.5 and +0.3).
+
+## Phase 4 - Cointegration / OU / Avellaneda-Lee framework with walk-forward optimisation
+
+Code: `research/ou_lab.py`, `research/ou_run.py`, `research/ou_wfo.py`; results in
+`research/results/ou_wfo/`.
+* Spread: ln Y - beta ln X with rolling OLS beta (also total-least-squares and market-neutral
+  spreads); z = (spread - mean) / std over the trailing window (also the Avellaneda-Lee s-score
+  from an AR(1)/OU fit). Rules: enter at |z| >= 2 (or 1.5; A-L: 1.25), exit when z crosses 0
+  (A-L: -0.5 / +0.75), time stop at 2.5 OU half-lives, hard stop at |z| >= 3.5. Signal at a
+  bar's close, execution at the next bar's open; 2.5 bps per leg + borrow.
+* EMCR on the spread z: crossings per year, completed +-2 -> 0 reversions, success rate,
+  EMCR-score (successful reversions per year), hysteresis-band crossings, crossings per
+  half-life; Sarmento-Horta filter (EG p < 0.05, Hurst < 0.5, half-life 1 day-1 year,
+  >= 12 crossings/yr) with EMCR or Correlation ranking.
+* Walk-forward from the start of each sample (hourly: 60-day formation / 10-day trading;
+  5-minute: 10 / 5 days), whole universe; per criterion the engine (Z2 / Z1.5 / A-L) and book
+  size (5/10/20) are chosen each window from the previous ~25 windows only.
+* Hourly 2016-2026, market-neutral spread: best Cointegration 0.21; EMCR variants -0.28 to
+  -0.41; deflated Sharpe 0.06; no DM difference significant.
+* Hourly 2016-2026, OLS spread (first version): best EMCRscore+Correlation -0.06; DM vs
+  Cointegration p = 0.035 (Holm 0.56).
+* 5-minute stocks 2024-2026: every criterion negative (-0.4 to -2.5); best fixed setting
+  SH|Correlation with the A-L rule 0.32.
