@@ -255,7 +255,9 @@ _PREP: dict = {}
 
 
 def prepare(D, des: Design):
-    key = (des.F, des.T, des.top_k, des.entry, des.exit, des.signal, des.params.get("half_bps", 2.0),
+    key = (D.get("market", "large_hourly"), des.params.get("rank_lo", 0), des.params.get("cost_tiers", False),
+           des.params.get("prefilter", 0), des.params.get("min_price", 5.0),
+           des.F, des.T, des.top_k, des.entry, des.exit, des.signal, des.params.get("half_bps", 2.0),
            des.params.get("same"),
            des.params.get("cost_mult", 3.0), tuple(des.params.get("roll_windows", (5, 10, 20))))
     if key in _PREP:
@@ -267,9 +269,12 @@ def prepare(D, des: Design):
         pxf = D["px"].iloc[rows_f]
         cov = pxf.notna().mean()
         ok = D["instrument_ok"].reindex(pxf.columns).fillna(False).astype(bool) & (cov >= 0.95) \
-            & (pxf.median() >= 5)
+            & (pxf.median() >= des.params.get("min_price", 5.0))
         dv = (pxf * D["volume"].iloc[rows_f]).median()[ok.to_numpy()].sort_values(ascending=False)
-        names = sorted(dv.index[:des.top_k])
+        lo = des.params.get("rank_lo", 0)
+        names = sorted(dv.index[lo:lo + des.top_k])
+        if len(names) < 20:
+            continue
         P = D["px"][names].iloc[:f["t1"]].ffill()
         pf = P.iloc[rows_f].bfill().to_numpy()
         pt = P.iloc[rows_t].to_numpy()                         # last formation day + test days
@@ -281,7 +286,23 @@ def prepare(D, des: Design):
         # are dominated by volatility noise: median 9 bps, 2020 ~28 bps); 2 bps is the
         # typical effective half-spread of the 250 most liquid US stocks after 2015
         half = np.full(len(names), des.params.get("half_bps", 2.0) / 1e4)
+        if des.params.get("cost_tiers", False):
+            # one-way half-spread by formation median daily dollar volume (effective
+            # spreads of US stocks/ETFs after 2015, conservative)
+            mdv = dv.reindex(names).to_numpy()
+            half = np.select([mdv > 2e8, mdv > 5e7, mdv > 2e7, mdv > 5e6],
+                             [2e-4, 4e-4, 8e-4, 15e-4], 30e-4)
         ia, ib = np.triu_indices(len(names), 1)
+        pre = des.params.get("prefilter", 0)
+        if pre and len(ia) > pre:
+            # keep the `pre` most correlated pairs (daily log returns, formation only)
+            r = np.diff(np.log(pf), axis=0)
+            r = (r - r.mean(0)) / np.where(r.std(0) > 0, r.std(0), 1)
+            cm = (r.T @ r) / r.shape[0]
+            cv = cm[ia, ib]
+            top = np.argpartition(-cv, pre)[:pre]
+            ia, ib = ia[top], ib[top]
+            o = np.lexsort((ib, ia)); ia, ib = ia[o], ib[o]
         same = des.params.get("same")
         if same:
             sp = pd.read_csv(ROOT / "mcr" / "sp500_constituents.csv")
