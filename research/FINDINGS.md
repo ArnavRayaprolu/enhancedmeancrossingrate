@@ -86,9 +86,5 @@ weak or negative after 2021.
     Correlation|VW5_20c 0.60 vs Correlation 0.50; stand-alone raw/VW criteria <= 0.39.
   - Large caps, all pairs: Correlation 0.48 best; best raw criterion RawMA10 0.37.
   - Small caps: Correlation|VW5_20c 0.29, Correlation 0.22.
-* CNN trading policy (`research/cnn_policy.py`; after Guijarro-Ordonez, Pelger & Zanotti and
-  Eggebrecht & Luetkebohmert 2023): 1-D CNN on the last 30 days of static and rolling z,
-  position in [-1, 1], trained per fold on formation data to maximise net Sharpe, shared by
-  all criteria (`research/results/cnn_scan_*.csv`). Sharpe between -0.50 and +0.32 (sub-
-  industry) and -0.48 and +0.16 (all pairs), returns below 0.3%/yr: the network learns to
-  hold small or no positions, consistent with the absence of a learnable edge after costs.
+* A CNN trading policy was tried and removed at the author's request (it held small or no
+  positions; Sharpe between -0.5 and +0.3).
