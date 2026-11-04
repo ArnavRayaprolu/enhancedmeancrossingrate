@@ -109,3 +109,14 @@ Code: `research/ou_lab.py`, `research/ou_run.py`, `research/ou_wfo.py`; results 
 * Hourly 2016-2026, OLS spread (first version): best EMCRscore+Correlation -0.06; DM vs
   Cointegration p = 0.035 (Holm 0.56).
 * 5-minute stocks 2024-2026 (flat 2.5 bps): every criterion negative.
+
+### Phase 4b - paper-style selection and capital (Sarmento-Horta filter removed)
+Criteria as in the original paper (EMCR = spread-z mean crossings; Distance, Correlation,
+Cointegration; 50/50 percentile-rank hybrids) plus band-crossing EMCR; top-N without reuse;
+Eq. 8 rank-weighted capital over active pairs; walk-forward optimisation of engine and N.
+* 5-minute stocks, tick costs (1 cent): best Correlation 0.12, EMCRband 0.09, EMCR 0.00,
+  EMCR+Cointegration -1.18. 2-cent spread: all negative.
+* Hourly 2016-2026: all negative (best Correlation -0.12; EMCR -1.08).
+* 5-minute ETFs: all strongly negative (index-fund pairs churn on sub-basis-point spreads).
+* Eq. 8 puts all capital into the currently open pairs (volatility 8-17%), which magnifies
+  losses relative to the committed-capital (1/N) version used in Phase 4.
