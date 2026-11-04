@@ -39,9 +39,17 @@ from research import ou_lab as O, ou_run as R  # noqa: E402
 warnings.filterwarnings("ignore")
 OUT = ROOT / "research" / "ou_wfo"
 
-CLASSIC = ["Distance", "Correlation", "Cointegration", "HalfLife", "SH|Correlation"]
-EMCR = ["EMCR", "EMCRscore", "EMCRband", "EMCRscore+Correlation", "SH|EMCRscore", "SH|EMCRband"]
+# the original paper's seven criteria (EMCR = mean crossings of the spread z) plus the
+# enhanced band-crossing EMCR and its hybrids
+CLASSIC = ["Distance", "Correlation", "Cointegration"]
+EMCR = ["EMCR", "EMCR+Distance", "EMCR+Correlation", "EMCR+Cointegration",
+        "EMCRband", "EMCRband+Distance", "EMCRband+Correlation", "EMCRband+Cointegration"]
 CRITS = CLASSIC + EMCR
+# Diebold-Mariano families as in the paper: the champion vs each classic, and each
+# hybrid vs its own classic component
+DM_PAIRS = ([("EMCR+Cointegration", b) for b in CLASSIC] + [("EMCRband+Cointegration", b) for b in CLASSIC]
+            + [(f"EMCR+{c}", c) for c in CLASSIC] + [(f"EMCRband+{c}", c) for c in CLASSIC]
+            + [("EMCR", c) for c in CLASSIC] + [("EMCRband", c) for c in CLASSIC])
 # trading engines: (label, zmode, entry, exit_long, exit_short)
 ENGINES = {"Z2": ("spread", 2.0, 0.0, 0.0),
            "Z15": ("spread", 1.5, 0.0, 0.0),
@@ -129,7 +137,7 @@ def main(dataset, hedge="ols", ticks=0.0):
     perf = pd.DataFrame(rows).set_index("criterion")
     years = W.groupby(pd.DatetimeIndex(W.index).year).apply(lambda d: d.apply(sharpe)).T
     dm = []
-    for a, b in itertools.product(EMCR, CLASSIC):
+    for a, b in dict.fromkeys(DM_PAIRS):
         x, y = W[a].align(W[b], join="inner")
         t = I.diebold_mariano(x.to_numpy(), y.to_numpy(), "nw")
         bt = I.bootstrap_mean_pvalue((x - y).to_numpy(), reps=999)
@@ -143,7 +151,7 @@ def main(dataset, hedge="ols", ticks=0.0):
     pd.set_option("display.width", 200)
     print("\nWALK-FORWARD OPTIMISED PERFORMANCE\n", perf.round(3).to_string())
     print("\nSHARPE BY YEAR\n", years.round(2).to_string())
-    print("\nDIEBOLD-MARIANO (EMCR vs classic)\n", dm.round(4).to_string(index=False))
+    print("\nDIEBOLD-MARIANO\n", dm.round(4).to_string(index=False))
     print(f"\nbest: {best}; deflated Sharpe over {len(trials)} settings: {dsr['dsr']:.3f}")
     print("ALL DONE", flush=True)
 

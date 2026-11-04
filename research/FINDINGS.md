@@ -100,8 +100,7 @@ Code: `research/ou_lab.py`, `research/ou_run.py`, `research/ou_wfo.py`; results 
   bar's close, execution at the next bar's open; 2.5 bps per leg + borrow.
 * EMCR on the spread z: crossings per year, completed +-2 -> 0 reversions, success rate,
   EMCR-score (successful reversions per year), hysteresis-band crossings, crossings per
-  half-life; Sarmento-Horta filter (EG p < 0.05, Hurst < 0.5, half-life 1 day-1 year,
-  >= 12 crossings/yr) with EMCR or Correlation ranking.
+  half-life.
 * Walk-forward from the start of each sample (hourly: 60-day formation / 10-day trading;
   5-minute: 10 / 5 days), whole universe; per criterion the engine (Z2 / Z1.5 / A-L) and book
   size (5/10/20) are chosen each window from the previous ~25 windows only.
@@ -109,5 +108,4 @@ Code: `research/ou_lab.py`, `research/ou_run.py`, `research/ou_wfo.py`; results 
   -0.41; deflated Sharpe 0.06; no DM difference significant.
 * Hourly 2016-2026, OLS spread (first version): best EMCRscore+Correlation -0.06; DM vs
   Cointegration p = 0.035 (Holm 0.56).
-* 5-minute stocks 2024-2026: every criterion negative (-0.4 to -2.5); best fixed setting
-  SH|Correlation with the A-L rule 0.32.
+* 5-minute stocks 2024-2026 (flat 2.5 bps): every criterion negative.

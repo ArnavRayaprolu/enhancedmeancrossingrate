@@ -26,6 +26,9 @@ EMCR family (all computed on the formation z of the spread)
     EMCRexcess   observed crossing rate / OU-implied rate arccos(b)/pi
 Classic: Distance (SSD of normalised prices), Correlation, Cointegration (EG p),
 HalfLife (OU), Kappa (OU speed).
+Selection as in the original paper: percentile ranks (higher = better), hybrids
+'A+B' = 50/50 average of the two percentile ranks, top-N pairs with no security
+used more than max_uses times; capital rank-weighted across active pairs (Eq. 8).
 """
 from __future__ import annotations
 
@@ -63,6 +66,8 @@ class OUDesign:
     fees_bps: float = 0.3        #      plus commission + regulatory fees per dollar traded
     borrow_pa: float = 0.005
     bars_per_year: float = 252.0
+    weighting: str = "active"    # active: the paper's Eq. 8, w_i = Phi_i 1{active} / sum_j Phi_j 1{active}
+                                 # equal: 1/N committed per selected pair
     params: dict = field(default_factory=dict)
 
 
@@ -117,16 +122,6 @@ def crossing_gaps_cv(z: np.ndarray):
         if len(idx) >= 3:
             g = np.diff(idx); cv[j] = g.std() / g.mean()
     return cv
-
-
-def hurst(s: np.ndarray, lags=(2, 4, 8, 16, 32)) -> np.ndarray:
-    """Hurst exponent of each column from the scaling of the std of lagged
-    differences: std(s_{t+L} - s_t) ~ L^H. H < 0.5 = mean reverting."""
-    lags = [L for L in lags if L < s.shape[0] // 4]
-    ls = np.log(np.array(lags, float))
-    sd = np.vstack([np.log(np.maximum((s[L:] - s[:-L]).std(0), 1e-12)) for L in lags])
-    lm = ls.mean()
-    return ((ls - lm)[:, None] * (sd - sd.mean(0))).sum(0) / ((ls - lm) ** 2).sum()
 
 
 def hedge_ratio(y, x, mode):
@@ -195,12 +190,6 @@ def pair_stats(P: np.ndarray, ia, ib, des: OUDesign) -> pd.DataFrame:
         d["EMCRscore"] = d["EMCRtrade"] * d["EMCRsuccess"]
         d["EMCRband"] = band_crossings(z, 0.5) / years                 # hysteresis crossings per year
         d["EMCRhl"] = zc * np.where(np.isfinite(hl), hl, 0) / z.shape[0]  # crossings per half-life
-        d["Hurst"] = hurst(spread)
-        # Sarmento-Horta filter: cointegrated, H < 0.5, half-life between 1 day and 1 year,
-        # at least 12 mean crossings per year
-        bpd = des.bars_per_year / 252
-        d["SH"] = ((p < 0.05) & (d["Hurst"] < 0.5) & (hl >= bpd) & (hl <= des.bars_per_year)
-                   & (zc / years >= 12)).astype(float)
         out.append(pd.DataFrame(d))
     st = pd.concat(out, ignore_index=True)
     st["EMCRreg"] = np.nan
@@ -210,7 +199,7 @@ def pair_stats(P: np.ndarray, ia, ib, des: OUDesign) -> pd.DataFrame:
 ORIENT = {"Distance": False, "Correlation": True, "Cointegration": False, "HalfLife": False,
           "Kappa": True, "EMCR": True, "EMCRtrade": True, "EMCRsuccess": True,
           "EMCRscore": True, "EMCRspeed": False, "EMCRexcess": True, "EMCRreg": False,
-          "EMCRband": True, "EMCRhl": False, "Hurst": False, "SH": True}
+          "EMCRband": True, "EMCRhl": False}
 
 
 def pct(x, hib):
@@ -219,9 +208,6 @@ def pct(x, hib):
 
 
 def score(st, crit, q=0.5):
-    if crit.startswith("SH|"):
-        rs = score(st, crit[3:], q)
-        return np.where(st["SH"].to_numpy() > 0, rs, 0.0)
     if "|" in crit:
         f, r = crit.split("|")
         fs = score(st, f, q); rs = score(st, r, q)
@@ -320,7 +306,10 @@ def run_fold(fp, des: OUDesign):
     bt = np.clip(np.abs(st["beta"].to_numpy()[ch]), 0.2, 5.0)
     hedge_a = 1 / (1 + bt)
     n = len(ch)
-    w = np.where(pos != 0, 1.0 / n, 0.0)
+    if des.weighting == "active":
+        w = E.pair_weights(pos, sc[ch], "active", 1.0)      # Eq. 8 with the criterion scores Phi
+    else:
+        w = np.where(pos != 0, 1.0 / n, 0.0)
     if des.ticks > 0:
         p0 = fp["sig"][des.F - 1]                       # price at the end of formation
         cvec = des.ticks * 0.01 / (2 * p0) + des.fees_bps / 1e4
